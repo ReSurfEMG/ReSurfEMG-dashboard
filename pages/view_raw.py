@@ -11,13 +11,17 @@ layout = html.Div([
     dbc.Row([
         dbc.Col([
             html.Div([
-                html.H1(id='emg-data-title', children='EMG data'),
+                html.H1(id='emg-data-title', children='EMG data',
+                        style={'text-align': 'center'}
+),
+                html.Div(id='emg-filename'),
                 dbc.Button('Remove data', id='emg-delete-button',
                            style={'background': 'red',
                                   'border': 'transparent'})
             ],
                 id='emg-header',
-                hidden=True
+                hidden=True,
+                style={'align': 'center'}
             ),
             html.Div(id='emg-graphs-container',
                      className='six columns')
@@ -25,15 +29,18 @@ layout = html.Div([
 
         dbc.Col([
             html.Div([
-                html.H1(id='ventilator-data-title', children='Ventilator data'),
+                html.H1(id='ventilator-data-title', children='Ventilator data',
+                        style={'text-align': 'center'}),
+                html.Div(id='ventilator-filename'),
                 dbc.Button('Remove data', id='ventilator-delete-button',
                            style={'background': 'red',
                                   'border': 'transparent'})
             ],
                 id='ventilator-header', hidden=True
             ),
-            html.Div(id='ventilator-graphs-container',
-                     className='six columns')
+            html.Div(
+                id='ventilator-graphs-container',
+                className='six columns')
         ], width=6)
     ]),
     html.Div(id='hidden-div'),

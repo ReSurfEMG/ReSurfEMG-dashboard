@@ -18,9 +18,23 @@ def get_singleton():
 class Variables:
 
     def __init__(self):
+        self.emg_filename = None
+        self.ventilator_filename = None
         self.emg = None
         self.emg_freq = None
         self.ventilator_freq = None
+
+    def set_emg_filename(self, emg_filename):
+        self.emg_filename = emg_filename
+
+    def get_emg_filename(self):
+        return self.emg_filename
+
+    def set_ventilator_filename(self, ventilator_filename):
+        self.ventilator_filename = ventilator_filename
+
+    def get_ventilator_filename(self):
+        return self.ventilator_filename
 
     def set_emg(self, emg):
         self.emg = emg

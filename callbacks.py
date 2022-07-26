@@ -22,6 +22,10 @@ def parse_emg(status):
     emg_data = cv.poly5unpad(status[0])
     global emg_data_raw
     emg_data_raw = emg_data
+
+    filename = 'File: ' + status[0].split("\\")[-1]
+    variables.set_emg_filename(filename)
+
     # children = utils.add_emg_graphs(emg_data)
     return 'set'
 
@@ -34,6 +38,10 @@ def parse_vent(status):
     vent_data = cv.poly5unpad(status[0])
     global ventilator_data_raw
     ventilator_data_raw = vent_data
+
+    filename = 'File: ' + status[0].split("\\")[-1]
+    variables.set_ventilator_filename(filename)
+
     # children = utils.add_ventilator_graphs(vent_data)
     print('vent uploaded')
     return 'set'
@@ -55,6 +63,7 @@ def update_ventilator_frequency(freq):
 
 @callback(Output('emg-graphs-container', 'children'),
           Output('emg-header', 'hidden'),
+          Output('emg-filename', 'children'),
           Input('hidden-div', 'data'),
           Input('emg-delete-button', 'n_clicks'))
 def show_raw_data(emg_data, delete):
@@ -62,6 +71,7 @@ def show_raw_data(emg_data, delete):
     hidden = True
 
     trigger_id = ctx.triggered_id
+    filename = variables.get_emg_filename()
 
     if trigger_id == 'emg-delete-button':
         emg_data_raw = None
@@ -74,11 +84,12 @@ def show_raw_data(emg_data, delete):
         else:
             children_emg = []
 
-    return children_emg, hidden
+    return children_emg, hidden, filename
 
 
 @callback(Output('ventilator-graphs-container', 'children'),
           Output('ventilator-header', 'hidden'),
+          Output('ventilator-filename', 'children'),
           Input('hidden-div', 'data'),
           Input('ventilator-delete-button', 'n_clicks'))
 def show_raw_data(ventilator_data, delete):
@@ -86,6 +97,7 @@ def show_raw_data(ventilator_data, delete):
     hidden = True
 
     trigger_id = ctx.triggered_id
+    filename = variables.get_ventilator_filename()
 
     if trigger_id == 'ventilator-delete-button':
         ventilator_data_raw = None
@@ -98,4 +110,4 @@ def show_raw_data(ventilator_data, delete):
         else:
             children_vent = []
 
-    return children_vent, hidden
+    return children_vent, hidden, filename

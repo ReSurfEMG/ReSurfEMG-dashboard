@@ -16,6 +16,7 @@ dependencies:
   # - pandas
   - pip=20.2
   # - pyxdf
+  - waitress=2.1.2
 
   - pip:
     

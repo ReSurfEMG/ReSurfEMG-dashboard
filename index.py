@@ -7,6 +7,8 @@ import dash_bootstrap_components as dbc
 from dash import html
 from app import app
 
+server = app.server
+
 # static images
 image_filename = 'resources/resurfemg.png'
 # pylint: disable=consider-using-with

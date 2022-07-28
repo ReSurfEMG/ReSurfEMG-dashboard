@@ -1,17 +1,12 @@
 from dash import Input, Output, callback, ctx
 import dash_uploader as du
-from app import app
+from app import app, variables
 import static_variables
 import utils
 import numpy as np
 import resurfemg.converter_functions as cv
 
 du.configure_upload(app, r"C:\tmp\Uploads", use_upload_id=True)
-
-emg_data_raw = None
-ventilator_data_raw = None
-
-variables = static_variables.get_singleton()
 
 
 @du.callback(
@@ -20,8 +15,7 @@ variables = static_variables.get_singleton()
 )
 def parse_emg(status):
     emg_data = cv.poly5unpad(status[0])
-    global emg_data_raw
-    emg_data_raw = emg_data
+    variables.set_emg(emg_data)
 
     filename = 'File: ' + status[0].split("\\")[-1]
     variables.set_emg_filename(filename)
@@ -36,8 +30,7 @@ def parse_emg(status):
 )
 def parse_vent(status):
     vent_data = cv.poly5unpad(status[0])
-    global ventilator_data_raw
-    ventilator_data_raw = vent_data
+    variables.set_ventilator(vent_data)
 
     filename = 'File: ' + status[0].split("\\")[-1]
     variables.set_ventilator_filename(filename)
@@ -67,19 +60,19 @@ def update_ventilator_frequency(freq):
           Input('hidden-div', 'data'),
           Input('emg-delete-button', 'n_clicks'))
 def show_raw_data(emg_data, delete):
-    global emg_data_raw
+    emg_data = variables.get_emg()
     hidden = True
 
     trigger_id = ctx.triggered_id
     filename = variables.get_emg_filename()
 
     if trigger_id == 'emg-delete-button':
-        emg_data_raw = None
+        variables.set_emg(None)
         children_emg = []
     else:
-        if emg_data_raw is not None:
+        if emg_data is not None:
             emg_frequency = variables.get_emg_freq()
-            children_emg = utils.add_emg_graphs(np.array(emg_data_raw), emg_frequency)
+            children_emg = utils.add_emg_graphs(np.array(emg_data), emg_frequency)
             hidden = False
         else:
             children_emg = []
@@ -93,19 +86,19 @@ def show_raw_data(emg_data, delete):
           Input('hidden-div', 'data'),
           Input('ventilator-delete-button', 'n_clicks'))
 def show_raw_data(ventilator_data, delete):
-    global ventilator_data_raw
+    ventilator_data = variables.get_ventilator()
     hidden = True
 
     trigger_id = ctx.triggered_id
     filename = variables.get_ventilator_filename()
 
     if trigger_id == 'ventilator-delete-button':
-        ventilator_data_raw = None
+        variables.set_ventilator(None)
         children_vent = []
     else:
-        if ventilator_data_raw is not None:
+        if ventilator_data is not None:
             ventilator_frequency = variables.get_ventilator_freq()
-            children_vent = utils.add_ventilator_graphs(np.array(ventilator_data_raw), ventilator_frequency)
+            children_vent = utils.add_ventilator_graphs(np.array(ventilator_data), ventilator_frequency)
             hidden = False
         else:
             children_vent = []

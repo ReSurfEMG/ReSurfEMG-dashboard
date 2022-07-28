@@ -22,6 +22,7 @@ class Variables:
         self.ventilator_filename = None
         self.emg = None
         self.emg_freq = None
+        self.ventilator = None
         self.ventilator_freq = None
 
     def set_emg_filename(self, emg_filename):
@@ -38,6 +39,15 @@ class Variables:
 
     def set_emg(self, emg):
         self.emg = emg
+
+    def get_emg(self):
+        return self.emg
+
+    def set_ventilator(self, ventilator):
+        self.ventilator = ventilator
+
+    def get_ventilator(self):
+        return self.ventilator
 
     def set_emg_freq(self, emg_freq):
         self.emg_freq = emg_freq

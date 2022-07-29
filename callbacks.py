@@ -1,10 +1,10 @@
-from dash import Input, Output, callback, ctx
+from dash import Input, Output, callback, ctx, MATCH, State
 import dash_uploader as du
 from app import app, variables
-import static_variables
 import utils
 import numpy as np
 import resurfemg.converter_functions as cv
+
 
 du.configure_upload(app, r"C:\tmp\Uploads", use_upload_id=True)
 
@@ -104,3 +104,13 @@ def show_raw_data(ventilator_data, delete):
             children_vent = []
 
     return children_vent, hidden, filename
+
+
+@app.callback(
+    Output({"type": "dynamic-updater", "index": MATCH}, "updateData"),
+    Input({"type": "dynamic-graph", "index": MATCH}, "relayoutData"),
+    State({"type": "dynamic-graph", "index": MATCH}, "id"),
+    prevent_initial_call=True,
+)
+def update_figure(relayoutdata: dict, graph_id_dict: dict):
+    return utils.get_dict(graph_id_dict, relayoutdata)

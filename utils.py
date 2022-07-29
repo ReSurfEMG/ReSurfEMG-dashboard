@@ -67,16 +67,26 @@ def add_emg_graphs(emg_data, frequency):
 
     graphs = []
 
-    for i in range(emg_data.shape[0]):
-
-        uid = 'emg'+str(i)+'-graph'
-
+    if emg_data.ndim == 1:
+        leads_n = 1
+        time_array = get_time_array(emg_data.shape[0], frequency)
+    else:
+        leads_n = emg_data.shape[0]
         time_array = get_time_array(emg_data.shape[1], frequency)
+
+    for i in range(leads_n):
+
+        uid = 'emg'+str(i)+'-graph'+str(uuid4())
+
+        if leads_n == 1:
+            y = emg_data
+        else:
+            y = emg_data[i]
 
         fig = FigureResampler(go.Figure())
         fig.add_trace(go.Scatter(),
                       hf_x=time_array,
-                      hf_y=emg_data[i])
+                      hf_y=y)
 
         fig.update_layout(
             title="EMG Track " + str(i),
@@ -112,7 +122,9 @@ def add_ventilator_graphs(vent_data, frequency):
 
         uid = 'vent'+str(i)+'-graph'
 
-        time_array = get_time_array(vent_data.shape[1], frequency)
+        length = vent_data.shape[vent_data.ndim - 1]
+
+        time_array = get_time_array(length, frequency)
 
         fig = FigureResampler(go.Figure())
         fig.add_trace(go.Scatter(),

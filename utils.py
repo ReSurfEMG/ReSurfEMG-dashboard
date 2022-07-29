@@ -1,6 +1,14 @@
 import numpy as np
 import plotly.graph_objects as go
-from dash import html, dcc
+import trace_updater
+from app import app
+from dash import dcc
+from plotly_resampler import FigureResampler
+from typing import Dict
+from uuid import uuid4
+
+
+graph_dict_raw: Dict[str, FigureResampler] = {}
 
 # colors
 colors = {
@@ -60,18 +68,35 @@ def add_emg_graphs(emg_data, frequency):
     graphs = []
 
     for i in range(emg_data.shape[0]):
-        time_array=get_time_array(emg_data.shape[1], frequency)
-        fig=go.Figure(data=go.Scatter(x=time_array, y=emg_data[i], mode='lines'))
+
+        uid = 'emg'+str(i)+'-graph'
+
+        time_array = get_time_array(emg_data.shape[1], frequency)
+
+        fig = FigureResampler(go.Figure())
+        fig.add_trace(go.Scatter(),
+                      hf_x=time_array,
+                      hf_y=emg_data[i])
+
         fig.update_layout(
             title="EMG Track " + str(i),
             xaxis_title="Time [s]",
             yaxis_title="micro Volts",
             legend_title="Legend Title"
         )
-        graphs.append(dcc.Graph(
-            id='emg'+str(i)+'-graph',
-            figure=fig
-        ))
+
+        graphs.append(
+            dcc.Graph(
+                id={"type": "dynamic-graph", "index": uid},
+                figure=fig
+            )
+        )
+
+        graphs.append(trace_updater.TraceUpdater(
+            id={"type": "dynamic-updater", "index": uid},
+            gdID=uid))
+
+        graph_dict_raw[uid] = fig
 
     return graphs
 
@@ -84,17 +109,32 @@ def add_ventilator_graphs(vent_data, frequency):
     graphs = []
 
     for i in range(vent_data.shape[0]):
-        time_array=get_time_array(vent_data.shape[1], frequency)
-        fig=go.Figure(data=go.Scatter(x=time_array, y=vent_data[i], mode='lines'))
+
+        uid = 'vent'+str(i)+'-graph'
+
+        time_array = get_time_array(vent_data.shape[1], frequency)
+
+        fig = FigureResampler(go.Figure())
+        fig.add_trace(go.Scatter(),
+                      hf_x=time_array,
+                      hf_y=vent_data[i])
+
         fig.update_layout(
             title="Ventilator Track " + str(i),
             xaxis_title="Time [s]",
             legend_title="Legend Title"
         )
+
         graphs.append(dcc.Graph(
-            id='ventilator'+str(i)+'-graph',
+            id={"type": "dynamic-graph", "index": uid},
             figure=fig
         ))
+
+        graphs.append(trace_updater.TraceUpdater(
+            id={"type": "dynamic-updater", "index": uid},
+            gdID=uid))
+
+        graph_dict_raw[uid] = fig
 
     return graphs
 
@@ -103,3 +143,7 @@ def get_time_array(data_size, frequency):
     time_array = np.arange(0, data_size / frequency, 1 / frequency)
 
     return time_array
+
+
+def get_dict(graph_id_dict, relayoutdata):
+    return graph_dict_raw.get(graph_id_dict["index"]).construct_update_data(relayoutdata)

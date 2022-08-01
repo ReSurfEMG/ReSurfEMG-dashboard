@@ -66,12 +66,22 @@ ecg_card = dbc.Card([
             {"label": "ICA", "value": "1"},
             {"label": "None", "value": "2"},
         ],
-        value=1
+        value="1"
     )
 ])
 
 envelope_card = dbc.Card([
-    dbc.CardHeader("Envelope extraction")
+    dbc.CardHeader("Envelope extraction"),
+    dbc.Label("Envelope computation method"),
+    dbc.Select(
+        id="envelope-extraction-select",
+        options=[
+            {"label": "RMS", "value": "1"},
+            {"label": "Filtering", "value": "2"},
+            {"label": "None", "value": "3"},
+        ],
+        value="1"
+    )
 ])
 
 layout = html.Div([
@@ -93,9 +103,9 @@ layout = html.Div([
                 dbc.Col([envelope_card], width=3)
             ]),
             html.P(),
-            dbc.Row([dbc.Button('Apply',
-                       id='apply-pipeline-btn')
-                      ], style={'align': 'center'})
+            html.Div([dbc.Button('Apply', id='apply-pipeline-btn', size="lg", className="me-1")],
+                     style={'text-align': 'center'}),
+            html.P(),
 
         ],
             id='pipeline-card-body',
@@ -103,10 +113,12 @@ layout = html.Div([
     ]),
     dbc.Row([
         dbc.Col([
-            html.Div(id='preprocessing-processed-container')
+            html.H1("Processed signals", style={'text-align': 'center'}),
+            html.Div(id='preprocessing-processed-container'),
         ], width=6),
         dbc.Col([
-            html.Div(id='preprocessing-original-container')
+            html.H1("Raw signals", style={'text-align': 'center'}),
+            html.Div(id='preprocessing-original-container'),
         ], width=6),
         html.Div(id='load-preprocessing-div')
     ]),

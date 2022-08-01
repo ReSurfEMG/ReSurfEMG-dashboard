@@ -2,8 +2,9 @@ import dash
 import utils
 import numpy as np
 from app import variables
-from dash import Input, Output, State, callback, ctx, ALLSMALLER, MATCH
+from dash import Input, Output, State, callback, MATCH
 from resurfemg import helper_functions as hf
+from scipy.signal import find_peaks
 
 
 @callback(Output('preprocessing-original-container', 'children'),
@@ -28,48 +29,27 @@ def show_raw_data(data):
           State('base-filter-high', 'value'),
           State('ecg-filter-select', 'value'),
           State('envelope-extraction-select', 'value'))
-def show_raw_data(click, cut_percent, cut_tolerance, low_freq, high_freq, ecg_method, envelope_method):
+def show_data(click, cut_percent, cut_tolerance, low_freq, high_freq, ecg_method, envelope_method):
     emg_data = variables.get_emg()
     sample_rate = variables.get_emg_freq()
-    id_trigger = ctx.triggered_id
 
     if emg_data is not None:
-        emg_frequency = variables.get_emg_freq()
-        # if id_trigger == 'apply-baseline-btn':
 
         emg_cut = hf.bad_end_cutter_for_samples(emg_data, cut_percent, cut_tolerance)
 
         emg_data_filtered = hf.emg_bandpass_butter_sample(emg_cut,
                                                           low_freq,
                                                           high_freq,
-                                                          emg_frequency)
+                                                          sample_rate)
 
         emg_cut_final = hf.bad_end_cutter_for_samples(emg_data_filtered, 3, 5)
 
-        if ecg_method == '1':
-            emg_ica = hf.compute_ICA_two_comp(emg_cut_final)
-            ecg_lead = emg_cut_final[0]
-            emg_ecg = hf.pick_lowest_correlation_array(emg_ica, ecg_lead)
-            titles = ["Filtered Track 2"]
-        else:
-            emg_ecg = emg_cut_final
-            titles = None
+        emg_ecg, titles = apply_ecg_removal(ecg_method, emg_cut_final, sample_rate)
 
-        if envelope_method == '1':
-            # I set the window here to 100ms, but this may be changed
-            if emg_ecg.ndim == 1:
-                emg_env = hf.full_rolling_rms(abs(emg_ecg), int(sample_rate / 10))
-            else:
-                emg_env = np.array([hf.full_rolling_rms(lead, int(sample_rate / 10)) for lead in abs(emg_ecg)])
-        elif envelope_method == '2':
-            # THIS SHOULD BE CHANGED TO LOW PASS!
-            emg_env = hf.emg_highpass_butter(abs(emg_ecg), 150, sample_rate)
-        else:
-            emg_env = emg_ecg
+        emg_env = get_envelope(envelope_method, emg_ecg, sample_rate)
 
-        children_emg = utils.add_emg_graphs(emg_env, emg_frequency, titles)
-    # else:
-    #    children_emg = utils.add_emg_graphs(np.array(emg_data), emg_frequency)
+        children_emg = utils.add_emg_graphs(emg_env, sample_rate, titles)
+
     else:
         children_emg = []
 
@@ -89,3 +69,43 @@ def show_raw_data(toggle_value):
 )
 def collapse_graph(toggle_value):
     return toggle_value
+
+
+def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
+    if removal_method == '1':
+        emg_ica = hf.compute_ICA_two_comp(emg_signal)
+        ecg_lead = emg_signal[0]
+        emg_ecg = hf.pick_lowest_correlation_array(emg_ica, ecg_lead)
+        titles = ["Filtered Track 2"]
+    elif removal_method == '2':
+        peak_width = 0.001
+        peak_fraction = 0.40
+        ecg_rms = hf.full_rolling_rms(emg_signal[0, :], 10)
+        peak_height = peak_fraction * (max(ecg_rms) - min(ecg_rms))
+
+        # A better identification of the QRS complex should be implemented in the library
+        ecg_peaks, _ = find_peaks(ecg_rms, height=peak_height, width=peak_width * sample_rate)
+        emg_ecg = hf.gating(emg_signal[2, :], ecg_peaks, method=0)
+        titles = ["Filtered Track 2"]
+    else:
+        emg_ecg = emg_signal
+        titles = None
+
+    return emg_ecg, titles
+
+
+def get_envelope(envelope_method: int, emg_signal, sample_rate):
+
+    if envelope_method == '1':
+        # I set the window here to 100ms, but this may be changed
+        if emg_signal.ndim == 1:
+            emg_env = hf.full_rolling_rms(abs(emg_signal), int(sample_rate / 10))
+        else:
+            emg_env = np.array([hf.full_rolling_rms(lead, int(sample_rate / 10)) for lead in abs(emg_ecg)])
+    elif envelope_method == '2':
+        # THIS SHOULD BE CHANGED TO LOW PASS!
+        emg_env = hf.emg_highpass_butter(abs(emg_signal), 150, sample_rate)
+    else:
+        emg_env = emg_signal
+
+    return emg_env

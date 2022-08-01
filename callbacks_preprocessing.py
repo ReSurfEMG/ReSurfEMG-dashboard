@@ -2,7 +2,7 @@ import dash
 import utils
 import numpy as np
 from app import variables
-from dash import Input, Output, State, callback, ctx
+from dash import Input, Output, State, callback, ctx, ALLSMALLER, MATCH
 from resurfemg import helper_functions as hf
 
 
@@ -29,7 +29,6 @@ def show_raw_data(data):
           State('ecg-filter-select', 'value'),
           State('envelope-extraction-select', 'value'))
 def show_raw_data(click, cut_percent, cut_tolerance, low_freq, high_freq, ecg_method, envelope_method):
-    print(ecg_method)
     emg_data = variables.get_emg()
     sample_rate = variables.get_emg_freq()
     id_trigger = ctx.triggered_id
@@ -51,19 +50,24 @@ def show_raw_data(click, cut_percent, cut_tolerance, low_freq, high_freq, ecg_me
             emg_ica = hf.compute_ICA_two_comp(emg_cut_final)
             ecg_lead = emg_cut_final[0]
             emg_ecg = hf.pick_lowest_correlation_array(emg_ica, ecg_lead)
+            titles = ["Filtered Track 2"]
         else:
             emg_ecg = emg_cut_final
+            titles = None
 
         if envelope_method == '1':
             # I set the window here to 100ms, but this may be changed
-            emg_env = hf.full_rolling_rms(abs(emg_ecg), int(sample_rate / 10))
+            if emg_ecg.ndim == 1:
+                emg_env = hf.full_rolling_rms(abs(emg_ecg), int(sample_rate / 10))
+            else:
+                emg_env = np.array([hf.full_rolling_rms(lead, int(sample_rate / 10)) for lead in abs(emg_ecg)])
         elif envelope_method == '2':
             # THIS SHOULD BE CHANGED TO LOW PASS!
             emg_env = hf.emg_highpass_butter(abs(emg_ecg), 150, sample_rate)
         else:
             emg_env = emg_ecg
 
-        children_emg = utils.add_emg_graphs(emg_env, emg_frequency)
+        children_emg = utils.add_emg_graphs(emg_env, emg_frequency, titles)
     # else:
     #    children_emg = utils.add_emg_graphs(np.array(emg_data), emg_frequency)
     else:
@@ -75,4 +79,13 @@ def show_raw_data(click, cut_percent, cut_tolerance, low_freq, high_freq, ecg_me
 @callback(Output('pipeline-card-body', 'is_open'),
           Input('pipeline-switch', 'value'))
 def show_raw_data(toggle_value):
+    return toggle_value
+
+
+@callback(
+    Output({"type": "emg-graph-collapse", "index": MATCH}, "is_open"),
+    Input({"type": "emg-graph-switch", "index": MATCH}, "value"),
+    prevent_initial_call=True,
+)
+def collapse_graph(toggle_value):
     return toggle_value

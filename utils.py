@@ -1,3 +1,4 @@
+import dash_bootstrap_components as dbc
 import numpy as np
 import plotly.graph_objects as go
 import trace_updater
@@ -60,7 +61,7 @@ def blank_fig(text=None):
     return fig
 
 
-def add_emg_graphs(emg_data, frequency):
+def add_emg_graphs(emg_data, frequency, titles=None):
 
     if emg_data is None:
         return []
@@ -83,22 +84,38 @@ def add_emg_graphs(emg_data, frequency):
         else:
             y = emg_data[i]
 
+        if titles is None:
+            fig_title = "EMG Track " + str(i)
+        else:
+            fig_title = titles[i]
+
         fig = FigureResampler(go.Figure())
         fig.add_trace(go.Scatter(),
                       hf_x=time_array,
                       hf_y=y)
 
         fig.update_layout(
-            title="EMG Track " + str(i),
             xaxis_title="Time [s]",
             yaxis_title="micro Volts",
             legend_title="Legend Title"
         )
 
         graphs.append(
-            dcc.Graph(
-                id={"type": "dynamic-graph", "index": uid},
-                figure=fig
+            dbc.Switch(
+                id={"type": "emg-graph-switch", "index": uid},
+                label=fig_title,
+                value=True
+            ),
+        )
+        graphs.append(
+            dbc.Collapse([
+                dcc.Graph(
+                    id={"type": "dynamic-graph", "index": uid},
+                    figure=fig
+                )
+            ],
+                id={"type": "emg-graph-collapse", "index": uid},
+                is_open=True
             )
         )
 

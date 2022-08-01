@@ -26,10 +26,12 @@ def show_raw_data(data):
           State('tail-cut-tolerance', 'value'),
           State('base-filter-low', 'value'),
           State('base-filter-high', 'value'),
-          State('ecg-filter-select', 'value'))
-def show_raw_data(click, cut_percent, cut_tolerance, low_freq, high_freq, ecg_method):
+          State('ecg-filter-select', 'value'),
+          State('envelope-extraction-select', 'value'))
+def show_raw_data(click, cut_percent, cut_tolerance, low_freq, high_freq, ecg_method, envelope_method):
     print(ecg_method)
     emg_data = variables.get_emg()
+    sample_rate = variables.get_emg_freq()
     id_trigger = ctx.triggered_id
 
     if emg_data is not None:
@@ -45,15 +47,23 @@ def show_raw_data(click, cut_percent, cut_tolerance, low_freq, high_freq, ecg_me
 
         emg_cut_final = hf.bad_end_cutter_for_samples(emg_data_filtered, 3, 5)
 
-        if ecg_method == 1:
-            print('ok')
+        if ecg_method == '1':
             emg_ica = hf.compute_ICA_two_comp(emg_cut_final)
             ecg_lead = emg_cut_final[0]
-            emg_final = hf.pick_lowest_correlation_array(emg_ica, ecg_lead)
+            emg_ecg = hf.pick_lowest_correlation_array(emg_ica, ecg_lead)
         else:
-            emg_final = emg_cut_final
+            emg_ecg = emg_cut_final
 
-        children_emg = utils.add_emg_graphs(emg_final, emg_frequency)
+        if envelope_method == '1':
+            # I set the window here to 100ms, but this may be changed
+            emg_env = hf.full_rolling_rms(abs(emg_ecg), int(sample_rate / 10))
+        elif envelope_method == '2':
+            # THIS SHOULD BE CHANGED TO LOW PASS!
+            emg_env = hf.emg_highpass_butter(abs(emg_ecg), 150, sample_rate)
+        else:
+            emg_env = emg_ecg
+
+        children_emg = utils.add_emg_graphs(emg_env, emg_frequency)
     # else:
     #    children_emg = utils.add_emg_graphs(np.array(emg_data), emg_frequency)
     else:

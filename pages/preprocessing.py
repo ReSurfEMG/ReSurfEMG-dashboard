@@ -64,7 +64,8 @@ ecg_card = dbc.Card([
         id="ecg-filter-select",
         options=[
             {"label": "ICA", "value": "1"},
-            {"label": "None", "value": "2"},
+            {"label": "Gating", "value": "2"},
+            {"label": "None", "value": "3"},
         ],
         value="1"
     )
@@ -85,41 +86,53 @@ envelope_card = dbc.Card([
 ])
 
 layout = html.Div([
-    dbc.Card([
-        dbc.CardHeader([
-            dbc.Switch(
-                id="pipeline-switch",
-                label="Custom pipeline",
-                value=False
-            ),
-        ], "Processing pipeline", style={'text-align': 'center'}
-        ),
-        dbc.Collapse([
-            html.P(),
-            dbc.Row([
-                dbc.Col([tailcut_card], width=3),
-                dbc.Col([baseline_card], width=3),
-                dbc.Col([ecg_card], width=3),
-                dbc.Col([envelope_card], width=3)
-            ]),
-            html.P(),
-            html.Div([dbc.Button('Apply', id='apply-pipeline-btn', size="lg", className="me-1")],
-                     style={'text-align': 'center'}),
-            html.P(),
-
-        ],
-            id='pipeline-card-body',
-            is_open=False),
-    ]),
+    html.P(),
     dbc.Row([
         dbc.Col([
-            html.H1("Processed signals", style={'text-align': 'center'}),
-            html.Div(id='preprocessing-processed-container'),
-        ], width=6),
+            dbc.Card([
+                dbc.CardHeader([
+                    dbc.Switch(
+                        id="pipeline-switch",
+                        label="Custom pipeline",
+                        value=False
+                    ),
+                ], "Processing pipeline", style={'text-align': 'center'}
+                ),
+                dbc.Collapse([
+                    html.P(),
+                    dbc.Col([
+                        tailcut_card,
+                        html.P(),
+                        baseline_card,
+                        html.P(),
+                        ecg_card,
+                        html.P(),
+                        envelope_card
+                    ]),
+                    html.P(),
+                    html.Div([dbc.Button('Apply', id='apply-pipeline-btn', size="lg", className="me-1")],
+                             style={'text-align': 'center'}),
+                    html.P(),
+
+                ],
+                    id='pipeline-card-body',
+                    is_open=False),
+            ])
+        ], width=2),
+
         dbc.Col([
-            html.H1("Raw signals", style={'text-align': 'center'}),
-            html.Div(id='preprocessing-original-container'),
-        ], width=6),
+            dbc.Card([
+                dbc.CardHeader("Processed signals", style={'text-align': 'center'}),
+                html.Div(id='preprocessing-processed-container'),
+            ]),
+
+        ], width=5),
+        dbc.Col([
+            dbc.Card([
+                dbc.CardHeader("Raw signals", style={'text-align': 'center'}),
+                html.Div(id='preprocessing-original-container'),
+            ]),
+        ], width=5),
         html.Div(id='load-preprocessing-div')
     ]),
 

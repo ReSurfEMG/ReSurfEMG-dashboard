@@ -1,10 +1,14 @@
 import dash
+import dash_bootstrap_components as dbc
 import utils
 import numpy as np
 from app import variables
-from dash import Input, Output, State, callback, MATCH
+from dash import Input, Output, State, callback, MATCH, ALL, html
 from resurfemg import helper_functions as hf
 from scipy.signal import find_peaks
+
+
+card_counter = 0
 
 
 @callback(Output('preprocessing-original-container', 'children'),
@@ -28,8 +32,9 @@ def show_raw_data(data):
           State('base-filter-low', 'value'),
           State('base-filter-high', 'value'),
           State('ecg-filter-select', 'value'),
-          State('envelope-extraction-select', 'value'))
-def show_data(click, cut_percent, cut_tolerance, low_freq, high_freq, ecg_method, envelope_method):
+          State('envelope-extraction-select', 'value'),
+          State({"type": "emg-graph-switch", "index": ALL}, "value"))
+def show_data(click, cut_percent, cut_tolerance, low_freq, high_freq, ecg_method, envelope_method, steps):
     emg_data = variables.get_emg()
     sample_rate = variables.get_emg_freq()
 
@@ -52,7 +57,6 @@ def show_data(click, cut_percent, cut_tolerance, low_freq, high_freq, ecg_method
 
     else:
         children_emg = []
-
     return children_emg
 
 
@@ -65,10 +69,42 @@ def show_raw_data(toggle_value):
 @callback(
     Output({"type": "emg-graph-collapse", "index": MATCH}, "is_open"),
     Input({"type": "emg-graph-switch", "index": MATCH}, "value"),
-    prevent_initial_call=True,
+    prevent_initial_call=True
 )
 def collapse_graph(toggle_value):
     return toggle_value
+
+
+@callback(Output('custom-preprocessing-steps', 'children'),
+          Input('add-steps-btn', 'n_clicks'),
+          State('custom-preprocessing-steps', 'children'),
+          prevent_initial_call=True)
+def show_raw_data(click, previous_content):
+    global card_counter
+
+    card_counter += 1
+
+    new_card = dbc.Card([
+        dbc.CardHeader("New step"),
+        dbc.Label("ECG removal method"),
+        dbc.Select(
+            id={"type": "emg-graph-switch", "index": str(card_counter)},
+            options=[
+                {"label": "ICA", "value": "1"},
+                {"label": "Gating", "value": "2"},
+                {"label": "None", "value": "3"},
+            ],
+            value="1"
+        )
+    ]
+    )
+
+    if previous_content is None:
+        updated_content = new_card
+    else:
+        updated_content = previous_content + [new_card, html.P()]
+
+    return updated_content
 
 
 def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
@@ -101,7 +137,7 @@ def get_envelope(envelope_method: int, emg_signal, sample_rate):
         if emg_signal.ndim == 1:
             emg_env = hf.full_rolling_rms(abs(emg_signal), int(sample_rate / 10))
         else:
-            emg_env = np.array([hf.full_rolling_rms(lead, int(sample_rate / 10)) for lead in abs(emg_ecg)])
+            emg_env = np.array([hf.full_rolling_rms(lead, int(sample_rate / 10)) for lead in abs(emg_signal)])
     elif envelope_method == '2':
         # THIS SHOULD BE CHANGED TO LOW PASS!
         emg_env = hf.emg_highpass_butter(abs(emg_signal), 150, sample_rate)

@@ -107,6 +107,13 @@ layout = html.Div([
                         html.P(),
                         ecg_card,
                         html.P(),
+                        html.Div([], id='custom-preprocessing-steps'),
+                        html.Div([
+                            dbc.Button('Add steps', id='add-steps-btn')
+                        ],
+                            style={'text-align': 'center'}
+                        ),
+                        html.P(),
                         envelope_card
                     ]),
                     html.P(),
@@ -126,13 +133,13 @@ layout = html.Div([
                 html.Div(id='preprocessing-processed-container'),
             ]),
 
-        ], width=5),
+        ], width=6),
         dbc.Col([
             dbc.Card([
                 dbc.CardHeader("Raw signals", style={'text-align': 'center'}),
                 html.Div(id='preprocessing-original-container'),
             ]),
-        ], width=5),
+        ], width=4),
         html.Div(id='load-preprocessing-div')
     ]),
 

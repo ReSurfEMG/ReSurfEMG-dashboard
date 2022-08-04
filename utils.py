@@ -3,11 +3,11 @@ import numpy as np
 import plotly.graph_objects as go
 import trace_updater
 from app import app
-from dash import dcc
+from dash import dcc, html
+from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod
 from plotly_resampler import FigureResampler
 from typing import Dict
 from uuid import uuid4
-
 
 graph_dict_raw: Dict[str, FigureResampler] = {}
 
@@ -62,7 +62,6 @@ def blank_fig(text=None):
 
 
 def add_emg_graphs(emg_data, frequency, titles=None):
-
     if emg_data is None:
         return []
 
@@ -77,7 +76,7 @@ def add_emg_graphs(emg_data, frequency, titles=None):
 
     for i in range(leads_n):
 
-        uid = 'emg'+str(i)+'-graph'+str(uuid4())
+        uid = 'emg' + str(i) + '-graph' + str(uuid4())
 
         if leads_n == 1:
             y = emg_data
@@ -129,15 +128,13 @@ def add_emg_graphs(emg_data, frequency, titles=None):
 
 
 def add_ventilator_graphs(vent_data, frequency):
-
     if vent_data is None:
         return []
 
     graphs = []
 
     for i in range(vent_data.shape[0]):
-
-        uid = 'vent'+str(i)+'-graph'
+        uid = 'vent' + str(i) + '-graph'
 
         length = vent_data.shape[vent_data.ndim - 1]
 
@@ -176,3 +173,86 @@ def get_time_array(data_size, frequency):
 
 def get_dict(graph_id_dict, relayoutdata):
     return graph_dict_raw.get(graph_id_dict["index"]).construct_update_data(relayoutdata)
+
+
+def get_band_pass_layout(id_low, id_high):
+    layout = [
+        dbc.Row([
+            dbc.Col([
+                html.P("Low cut frequency"),
+                dcc.Input(
+                    id=id_low,
+                    type="number",
+                    placeholder="low cut",
+                    value=3
+                )
+            ]),
+            dbc.Col([
+                html.P("High cut frequency"),
+                dcc.Input(
+                    id=id_high,
+                    type="number",
+                    placeholder="high cut",
+                    value=450
+                )
+            ])
+        ])
+    ]
+
+    return layout
+
+
+def get_high_pass_layout(id_low):
+    layout = [
+        dbc.Col([
+            html.P("Low cut frequency"),
+            dcc.Input(
+                id=id_low,
+                type="number",
+                placeholder="low cut",
+                value=3
+            )
+        ])
+    ]
+
+    return layout
+
+
+def get_low_pass_layout(id_low):
+    layout = [
+        dbc.Col([
+            html.P("High cut frequency"),
+            dcc.Input(
+                id=id_low,
+                type="number",
+                placeholder="high cut",
+                value=450
+            )
+        ])
+    ]
+
+    return layout
+
+
+def get_ecg_removal_layout(id_removal):
+    layout = [
+        dbc.Label("ECG removal method"),
+        dbc.Select(
+            id=id_removal,
+            options=[
+                {"label": "ICA", "value": EcgRemovalMethods.ICA},
+                {"label": "Gating", "value": EcgRemovalMethods.GATING},
+                {"label": "None", "value": EcgRemovalMethods.NONE},
+            ],
+            value="1"
+        )
+    ]
+
+    return layout
+
+
+def get_idx_dict_list(dict_list, key, value):
+    idx = next((i for i, item in enumerate(dict_list)
+                if item[key] == value), None)
+
+    return idx

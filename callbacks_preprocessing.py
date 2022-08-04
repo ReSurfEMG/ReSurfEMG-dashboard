@@ -3,10 +3,10 @@ import dash_bootstrap_components as dbc
 import utils
 import numpy as np
 from app import variables
-from dash import Input, Output, State, callback, MATCH, ALL, html
+from dash import Input, Output, State, callback, MATCH, ALL, html, ctx
+from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod
 from resurfemg import helper_functions as hf
 from scipy.signal import find_peaks
-
 
 card_counter = 0
 
@@ -14,6 +14,8 @@ card_counter = 0
 @callback(Output('preprocessing-original-container', 'children'),
           Input('load-preprocessing-div', 'data'))
 def show_raw_data(data):
+    global card_counter
+
     emg_data = variables.get_emg()
     emg_frequency = variables.get_emg_freq()
 
@@ -33,13 +35,32 @@ def show_raw_data(data):
           State('base-filter-high', 'value'),
           State('ecg-filter-select', 'value'),
           State('envelope-extraction-select', 'value'),
-          State({"type": "emg-graph-switch", "index": ALL}, "value"))
-def show_data(click, cut_percent, cut_tolerance, low_freq, high_freq, ecg_method, envelope_method, steps):
+          State({"type": "additional-step-type", "index": ALL}, "value"),
+          State({"type": "additional-step-low", "index": ALL}, "value"),
+          State({"type": "additional-step-low", "index": ALL}, "id"),
+          State({"type": "additional-step-high", "index": ALL}, "value"),
+          State({"type": "additional-step-high", "index": ALL}, "id"),
+          State({"type": "additional-step-removal", "index": ALL}, "value"),
+          State({"type": "additional-step-removal", "index": ALL}, "id"))
+def show_data(click,
+              cut_percent,
+              cut_tolerance,
+              low_freq,
+              high_freq,
+              ecg_method,
+              envelope_method,
+              additional_steps,
+              additional_low,
+              additional_low_idx,
+              additional_high,
+              additional_high_idx,
+              additional_rem,
+              additional_rem_idx):
+
     emg_data = variables.get_emg()
     sample_rate = variables.get_emg_freq()
 
     if emg_data is not None:
-
         emg_cut = hf.bad_end_cutter_for_samples(emg_data, cut_percent, cut_tolerance)
 
         emg_data_filtered = hf.emg_bandpass_butter_sample(emg_cut,
@@ -51,7 +72,47 @@ def show_data(click, cut_percent, cut_tolerance, low_freq, high_freq, ecg_method
 
         emg_ecg, titles = apply_ecg_removal(ecg_method, emg_cut_final, sample_rate)
 
-        emg_env = get_envelope(envelope_method, emg_ecg, sample_rate)
+        new_step_emg = emg_ecg
+
+        for n, step in enumerate(additional_steps):
+            if step == ProcessTypology.BAND_PASS:
+                idx = utils.get_idx_dict_list(additional_low_idx, 'index', str(n+1))
+
+                low_cut = additional_low[idx]
+                high_cut = additional_high[idx]
+
+                new_step_emg = hf.emg_bandpass_butter_sample(new_step_emg, low_cut, high_cut, sample_rate)
+
+            elif step == ProcessTypology.HIGH_PASS:
+                idx = utils.get_idx_dict_list(additional_low_idx, 'index', str(n + 1))
+                low_cut = additional_low[idx]
+
+                new_step_emg = hf.emg_highpass_butter(new_step_emg, low_cut, sample_rate)
+
+            elif step == ProcessTypology.LOW_PASS:
+                idx = utils.get_idx_dict_list(additional_high_idx, 'index', str(n + 1))
+                high_cut = additional_high[idx]
+
+                # TODO: add function when it will be available in helper_functions
+                # new_step_emg = hf.emg_lowpass_butter(new_step_emg, low_cut, sample_rate)
+
+            elif step == ProcessTypology.ECG_REMOVAL:
+                idx = utils.get_idx_dict_list(additional_rem_idx, 'index', str(n + 1))
+
+                ecg_additional_method = additional_rem[idx]
+
+                # at the moment we need to create a metrix with 3 leads to use the methods
+                # the lead 0 is the  ecg lead, the other two are the same processed signal
+                # if the matrix is still bi-dimensional, we use it
+
+                if new_step_emg.ndim == 1:
+                    tmp_matrix = [emg_cut_final[0, :], new_step_emg, new_step_emg]
+                else:
+                    tmp_matrix = new_step_emg
+
+                new_step_emg, titles = apply_ecg_removal(ecg_additional_method, tmp_matrix, sample_rate)
+
+        emg_env = get_envelope(envelope_method, new_step_emg, sample_rate)
 
         children_emg = utils.add_emg_graphs(emg_env, sample_rate, titles)
 
@@ -77,51 +138,77 @@ def collapse_graph(toggle_value):
 
 @callback(Output('custom-preprocessing-steps', 'children'),
           Input('add-steps-btn', 'n_clicks'),
+          Input({"type": "step-close-button", "index": ALL}, "n_clicks"),
           State('custom-preprocessing-steps', 'children'),
-          prevent_initial_call=True)
-def show_raw_data(click, previous_content):
+          prevent_initial_call=False)
+def add_step(click, close, previous_content):
     global card_counter
 
-    card_counter += 1
+    id_ctx = ctx.triggered_id
+    # if the page is reloaded the steps are reset
+    if id_ctx is None:
+        card_counter = 0
+        return []
 
-    new_card = dbc.Card([
-        dbc.CardHeader("New step"),
-        dbc.Label("ECG removal method"),
-        dbc.Select(
-            id={"type": "emg-graph-switch", "index": str(card_counter)},
-            options=[
-                {"label": "ICA", "value": "1"},
-                {"label": "Gating", "value": "2"},
-                {"label": "None", "value": "3"},
-            ],
-            value="1"
-        )
-    ]
-    )
+    elif id_ctx == 'add-steps-btn':
+        card_counter += 1
+        new_card = new_step_body(card_counter)
 
-    if previous_content is None:
-        updated_content = new_card
+        if previous_content is None:
+            updated_content = new_card
+        else:
+            updated_content = previous_content + [new_card, html.P()]
+
     else:
-        updated_content = previous_content + [new_card, html.P()]
+        remove_idx = id_ctx['index']
+        for n, el in enumerate(previous_content):
+            if el['type'] == 'Card' and el['props']['id']['index'] == remove_idx:
+                del previous_content[n + 1]
+                previous_content.remove(el)
+
+        updated_content = previous_content
 
     return updated_content
 
 
+@callback(Output({"type": "additional-step-core", "index": MATCH}, "children"),
+          Input({"type": "additional-step-type", "index": MATCH}, "value"),
+          prevent_initial_call=True)
+def get_body(selected_value):
+
+    new_section = []
+
+    if selected_value == ProcessTypology.BAND_PASS:
+        new_section = utils.get_band_pass_layout({"type": "additional-step-low", "index": str(card_counter)},
+                                                 {"type": "additional-step-high", "index": str(card_counter)})
+    elif selected_value == ProcessTypology.HIGH_PASS:
+        new_section = utils.get_high_pass_layout({"type": "additional-step-low", "index": str(card_counter)})
+    elif selected_value == ProcessTypology.LOW_PASS:
+        new_section = utils.get_low_pass_layout({"type": "additional-step-high", "index": str(card_counter)})
+    elif selected_value == ProcessTypology.ECG_REMOVAL:
+        new_section = utils.get_ecg_removal_layout({"type": "additional-step-removal", "index": str(card_counter)})
+
+    return new_section
+
+
 def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
-    if removal_method == '1':
+    if removal_method == EcgRemovalMethods.ICA:
         emg_ica = hf.compute_ICA_two_comp(emg_signal)
         ecg_lead = emg_signal[0]
+
         emg_ecg = hf.pick_lowest_correlation_array(emg_ica, ecg_lead)
+
         titles = ["Filtered Track 2"]
-    elif removal_method == '2':
+    elif removal_method == EcgRemovalMethods.GATING:
+        # TODO: change with QRS identification when available in library
         peak_width = 0.001
         peak_fraction = 0.40
         ecg_rms = hf.full_rolling_rms(emg_signal[0, :], 10)
         peak_height = peak_fraction * (max(ecg_rms) - min(ecg_rms))
-
-        # A better identification of the QRS complex should be implemented in the library
         ecg_peaks, _ = find_peaks(ecg_rms, height=peak_height, width=peak_width * sample_rate)
+
         emg_ecg = hf.gating(emg_signal[2, :], ecg_peaks, method=0)
+
         titles = ["Filtered Track 2"]
     else:
         emg_ecg = emg_signal
@@ -131,17 +218,47 @@ def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
 
 
 def get_envelope(envelope_method: int, emg_signal, sample_rate):
-
-    if envelope_method == '1':
+    if envelope_method == EnvelopeMethod.RMS:
         # I set the window here to 100ms, but this may be changed
         if emg_signal.ndim == 1:
             emg_env = hf.full_rolling_rms(abs(emg_signal), int(sample_rate / 10))
         else:
             emg_env = np.array([hf.full_rolling_rms(lead, int(sample_rate / 10)) for lead in abs(emg_signal)])
-    elif envelope_method == '2':
+    elif envelope_method == EnvelopeMethod.FILTERING:
         # THIS SHOULD BE CHANGED TO LOW PASS!
         emg_env = hf.emg_highpass_butter(abs(emg_signal), 150, sample_rate)
     else:
         emg_env = emg_signal
 
     return emg_env
+
+
+def new_step_body(index):
+    new_card = dbc.Card([
+        dbc.CardHeader([
+            html.Button(
+                html.I(className="fas fa-times", style={'color': 'red'}),
+                className="ml-auto close",
+                id={"type": "step-close-button", "index": str(index)},
+                style={'border': 'none',
+                       'background': 'transparent'}
+            ),
+            dbc.Label("Additional step")
+        ]),
+        dbc.Label("Step type"),
+        dbc.Select(
+            id={"type": "additional-step-type", "index": str(index)},
+            options=[
+                {"label": "", "value": "0"},
+                {"label": "Band-pass filter", "value": ProcessTypology.BAND_PASS},
+                {"label": "High-pass filter", "value": ProcessTypology.HIGH_PASS},
+                {"label": "Low-pass filter", "value": ProcessTypology.LOW_PASS},
+                {"label": "ECG removal", "value": ProcessTypology.ECG_REMOVAL},
+            ],
+            value="0"
+        ),
+        html.Div([], id={"type": "additional-step-core", "index": str(card_counter)})
+    ],
+        id={"type": "additional-step-card", "index": str(card_counter)})
+
+    return new_card

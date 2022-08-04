@@ -157,5 +157,21 @@ layout = html.Div([
         ], width=4),
         html.Div(id='load-preprocessing-div')
     ]),
-
+    dbc.Row([
+        html.Span([
+                html.Button(
+                    className="fas fa-download",
+                    id='download-data-btn',
+                    style={'color': 'blue',
+                           'background': 'transparent',
+                           'border': 'none',
+                           'font-size': '34px'}
+                ),
+                dbc.Label("SAVE DATA")
+        ]),
+        dcc.Download(id="download-params"),
+        dcc.Download(id="download-emg-processed")
+        ],
+        style={'text-align': 'center'}
+    )
 ])

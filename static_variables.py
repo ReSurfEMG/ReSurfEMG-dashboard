@@ -24,6 +24,7 @@ class Variables:
         self.emg_freq = None
         self.ventilator = None
         self.ventilator_freq = None
+        self.emg_processed = None
 
     def set_emg_filename(self, emg_filename):
         self.emg_filename = emg_filename
@@ -60,3 +61,9 @@ class Variables:
 
     def get_ventilator_freq(self):
         return self.ventilator_freq
+
+    def set_emg_processed(self, emg_processed):
+        self.emg_processed = emg_processed
+
+    def get_emg_processed(self):
+        return self.emg_processed

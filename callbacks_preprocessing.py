@@ -218,7 +218,7 @@ def get_body(selected_value, card_id):
           prevent_initial_call=True)
 def download_data(click):
 
-    params_file = dict(content=json.dumps(json_parameters), filename='tst.txt')
+    params_file = dict(content=json.dumps(json_parameters), filename='parameters.txt')
 
     df = pd.DataFrame(variables.get_emg_processed().transpose())
 

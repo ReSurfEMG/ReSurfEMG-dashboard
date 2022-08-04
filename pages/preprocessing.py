@@ -109,7 +109,13 @@ layout = html.Div([
                         html.P(),
                         html.Div([], id='custom-preprocessing-steps'),
                         html.Div([
-                            dbc.Button('Add steps', id='add-steps-btn')
+                            html.Button(
+                                className="fas fa-plus-circle",
+                                id='add-steps-btn',
+                                style={'color': 'blue',
+                                       'background': 'transparent',
+                                       'border': 'none',
+                                       'font-size': '34px'})
                         ],
                             style={'text-align': 'center'}
                         ),
@@ -117,8 +123,17 @@ layout = html.Div([
                         envelope_card
                     ]),
                     html.P(),
-                    html.Div([dbc.Button('Apply', id='apply-pipeline-btn', size="lg", className="me-1")],
-                             style={'text-align': 'center'}),
+                    html.Div([
+                        html.Button(
+                                className="fas fa-play",
+                                id='apply-pipeline-btn',
+                                style={'color': 'green',
+                                       'background': 'transparent',
+                                       'border': 'none',
+                                       'font-size': '34px'})
+                        ],
+                            style={'text-align': 'center'}
+                        ),
                     html.P(),
 
                 ],

@@ -1,7 +1,7 @@
 import dash
-import dash_uploader as du
 import dash_bootstrap_components as dbc
 from dash import html, dcc
+from definitions import EcgRemovalMethods, EnvelopeMethod
 
 dash.register_page(__name__, path='/preprocessing')
 
@@ -63,9 +63,9 @@ ecg_card = dbc.Card([
     dbc.Select(
         id="ecg-filter-select",
         options=[
-            {"label": "ICA", "value": "1"},
-            {"label": "Gating", "value": "2"},
-            {"label": "None", "value": "3"},
+            {"label": "ICA", "value": EcgRemovalMethods.ICA},
+            {"label": "Gating", "value": EcgRemovalMethods.GATING},
+            {"label": "None", "value": EcgRemovalMethods.NONE},
         ],
         value="1"
     )
@@ -77,9 +77,9 @@ envelope_card = dbc.Card([
     dbc.Select(
         id="envelope-extraction-select",
         options=[
-            {"label": "RMS", "value": "1"},
-            {"label": "Filtering", "value": "2"},
-            {"label": "None", "value": "3"},
+            {"label": "RMS", "value": EnvelopeMethod.RMS},
+            {"label": "Filtering", "value": EnvelopeMethod.FILTERING},
+            {"label": "None", "value": EnvelopeMethod.NONE},
         ],
         value="1"
     )

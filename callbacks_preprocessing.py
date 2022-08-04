@@ -1,15 +1,17 @@
 import dash
 import dash_bootstrap_components as dbc
+import json
 import utils
 import numpy as np
+import pandas as pd
 from app import variables
-from dash import Input, Output, State, callback, MATCH, ALL, html, ctx
+from dash import Input, Output, State, callback, MATCH, ALL, html, ctx, dcc
 from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod
 from resurfemg import helper_functions as hf
 from scipy.signal import find_peaks
 
 card_counter = 0
-
+json_parameters = []
 
 @callback(Output('preprocessing-original-container', 'children'),
           Input('load-preprocessing-div', 'data'))
@@ -35,6 +37,7 @@ def show_raw_data(data):
           State('base-filter-high', 'value'),
           State('ecg-filter-select', 'value'),
           State('envelope-extraction-select', 'value'),
+          State({"type": "additional-step-core", "index": ALL}, "id"),
           State({"type": "additional-step-type", "index": ALL}, "value"),
           State({"type": "additional-step-low", "index": ALL}, "value"),
           State({"type": "additional-step-low", "index": ALL}, "id"),
@@ -49,6 +52,7 @@ def show_data(click,
               high_freq,
               ecg_method,
               envelope_method,
+              additional_card,
               additional_steps,
               additional_low,
               additional_low_idx,
@@ -57,47 +61,60 @@ def show_data(click,
               additional_rem,
               additional_rem_idx):
 
+    global json_parameters
+    json_parameters.clear()
+
     emg_data = variables.get_emg()
     sample_rate = variables.get_emg_freq()
 
     if emg_data is not None:
         emg_cut = hf.bad_end_cutter_for_samples(emg_data, cut_percent, cut_tolerance)
+        json_parameters.append(utils.build_cutter_params_json(1, cut_percent, cut_tolerance))
 
         emg_data_filtered = hf.emg_bandpass_butter_sample(emg_cut,
                                                           low_freq,
                                                           high_freq,
                                                           sample_rate)
+        json_parameters.append(utils.build_bandpass_params_json(2, low_freq, high_freq))
 
         emg_cut_final = hf.bad_end_cutter_for_samples(emg_data_filtered, 3, 5)
+        json_parameters.append(utils.build_cutter_params_json(3, 3, 5))
 
         emg_ecg, titles = apply_ecg_removal(ecg_method, emg_cut_final, sample_rate)
+        json_parameters.append(utils.build_ecgfilt_params_json(4, EcgRemovalMethods(ecg_method)))
 
         new_step_emg = emg_ecg
 
-        for n, step in enumerate(additional_steps):
-            if step == ProcessTypology.BAND_PASS:
-                idx = utils.get_idx_dict_list(additional_low_idx, 'index', str(n+1))
+        for n, card in enumerate(additional_card):
+            card_id = card['index']
+            step = additional_steps[n]
+            if step == ProcessTypology.BAND_PASS.value:
+                idx_low = utils.get_idx_dict_list(additional_low_idx, 'index', card_id)
+                idx_high = utils.get_idx_dict_list(additional_high_idx, 'index', card_id)
 
-                low_cut = additional_low[idx]
-                high_cut = additional_high[idx]
+                low_cut = additional_low[idx_low]
+                high_cut = additional_high[idx_high]
 
                 new_step_emg = hf.emg_bandpass_butter_sample(new_step_emg, low_cut, high_cut, sample_rate)
+                json_parameters.append(utils.build_bandpass_params_json(n+5, low_cut, high_cut))
 
-            elif step == ProcessTypology.HIGH_PASS:
-                idx = utils.get_idx_dict_list(additional_low_idx, 'index', str(n + 1))
+            elif step == ProcessTypology.HIGH_PASS.value:
+                idx = utils.get_idx_dict_list(additional_low_idx, 'index', card_id)
                 low_cut = additional_low[idx]
 
                 new_step_emg = hf.emg_highpass_butter(new_step_emg, low_cut, sample_rate)
+                json_parameters.append(utils.build_highpass_params_json(n + 5, low_cut))
 
-            elif step == ProcessTypology.LOW_PASS:
-                idx = utils.get_idx_dict_list(additional_high_idx, 'index', str(n + 1))
+            elif step == ProcessTypology.LOW_PASS.value:
+                idx = utils.get_idx_dict_list(additional_high_idx, 'index', card_id)
                 high_cut = additional_high[idx]
 
                 # TODO: add function when it will be available in helper_functions
                 # new_step_emg = hf.emg_lowpass_butter(new_step_emg, low_cut, sample_rate)
+                #json_parameters.append(utils.build_lowpass_params_json(n + 5, high_cut))
 
-            elif step == ProcessTypology.ECG_REMOVAL:
-                idx = utils.get_idx_dict_list(additional_rem_idx, 'index', str(n + 1))
+            elif step == ProcessTypology.ECG_REMOVAL.value:
+                idx = utils.get_idx_dict_list(additional_rem_idx, 'index', card_id)
 
                 ecg_additional_method = additional_rem[idx]
 
@@ -111,8 +128,12 @@ def show_data(click,
                     tmp_matrix = new_step_emg
 
                 new_step_emg, titles = apply_ecg_removal(ecg_additional_method, tmp_matrix, sample_rate)
+                json_parameters.append(utils.build_ecgfilt_params_json(n + 5, EcgRemovalMethods(ecg_additional_method)))
 
         emg_env = get_envelope(envelope_method, new_step_emg, sample_rate)
+        json_parameters.append(utils.build_envelope_params_json(len(json_parameters)+1, EnvelopeMethod(envelope_method)))
+
+        variables.set_emg_processed(emg_env)
 
         children_emg = utils.add_emg_graphs(emg_env, sample_rate, titles)
 
@@ -173,33 +194,48 @@ def add_step(click, close, previous_content):
 
 @callback(Output({"type": "additional-step-core", "index": MATCH}, "children"),
           Input({"type": "additional-step-type", "index": MATCH}, "value"),
+          State({"type": "additional-step-core", "index": MATCH}, "id"),
           prevent_initial_call=True)
-def get_body(selected_value):
+def get_body(selected_value, card_id):
 
     new_section = []
-
-    if selected_value == ProcessTypology.BAND_PASS:
-        new_section = utils.get_band_pass_layout({"type": "additional-step-low", "index": str(card_counter)},
-                                                 {"type": "additional-step-high", "index": str(card_counter)})
-    elif selected_value == ProcessTypology.HIGH_PASS:
-        new_section = utils.get_high_pass_layout({"type": "additional-step-low", "index": str(card_counter)})
-    elif selected_value == ProcessTypology.LOW_PASS:
-        new_section = utils.get_low_pass_layout({"type": "additional-step-high", "index": str(card_counter)})
-    elif selected_value == ProcessTypology.ECG_REMOVAL:
-        new_section = utils.get_ecg_removal_layout({"type": "additional-step-removal", "index": str(card_counter)})
+    if selected_value == ProcessTypology.BAND_PASS.value:
+        new_section = utils.get_band_pass_layout({"type": "additional-step-low", "index": card_id['index']},
+                                                 {"type": "additional-step-high", "index": card_id['index']})
+    elif selected_value == ProcessTypology.HIGH_PASS.value:
+        new_section = utils.get_high_pass_layout({"type": "additional-step-low", "index": card_id['index']})
+    elif selected_value == ProcessTypology.LOW_PASS.value:
+        new_section = utils.get_low_pass_layout({"type": "additional-step-high", "index": card_id['index']})
+    elif selected_value == ProcessTypology.ECG_REMOVAL.value:
+        new_section = utils.get_ecg_removal_layout({"type": "additional-step-removal", "index": card_id['index']})
 
     return new_section
 
 
+@callback(Output('download-params', 'data'),
+          Output('download-emg-processed', 'data'),
+          Input('download-data-btn', 'n_clicks'),
+          prevent_initial_call=True)
+def download_data(click):
+
+    params_file = dict(content=json.dumps(json_parameters), filename='tst.txt')
+
+    df = pd.DataFrame(variables.get_emg_processed().transpose())
+
+    emg_file = dcc.send_data_frame(df.to_csv, 'emg.csv')
+
+    return params_file, emg_file
+
+
 def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
-    if removal_method == EcgRemovalMethods.ICA:
+    if removal_method == EcgRemovalMethods.ICA.value:
         emg_ica = hf.compute_ICA_two_comp(emg_signal)
         ecg_lead = emg_signal[0]
 
         emg_ecg = hf.pick_lowest_correlation_array(emg_ica, ecg_lead)
 
         titles = ["Filtered Track 2"]
-    elif removal_method == EcgRemovalMethods.GATING:
+    elif removal_method == EcgRemovalMethods.GATING.value:
         # TODO: change with QRS identification when available in library
         peak_width = 0.001
         peak_fraction = 0.40
@@ -218,13 +254,13 @@ def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
 
 
 def get_envelope(envelope_method: int, emg_signal, sample_rate):
-    if envelope_method == EnvelopeMethod.RMS:
+    if envelope_method == EnvelopeMethod.RMS.value:
         # I set the window here to 100ms, but this may be changed
         if emg_signal.ndim == 1:
             emg_env = hf.full_rolling_rms(abs(emg_signal), int(sample_rate / 10))
         else:
             emg_env = np.array([hf.full_rolling_rms(lead, int(sample_rate / 10)) for lead in abs(emg_signal)])
-    elif envelope_method == EnvelopeMethod.FILTERING:
+    elif envelope_method == EnvelopeMethod.FILTERING.value:
         # THIS SHOULD BE CHANGED TO LOW PASS!
         emg_env = hf.emg_highpass_butter(abs(emg_signal), 150, sample_rate)
     else:
@@ -250,10 +286,10 @@ def new_step_body(index):
             id={"type": "additional-step-type", "index": str(index)},
             options=[
                 {"label": "", "value": "0"},
-                {"label": "Band-pass filter", "value": ProcessTypology.BAND_PASS},
-                {"label": "High-pass filter", "value": ProcessTypology.HIGH_PASS},
-                {"label": "Low-pass filter", "value": ProcessTypology.LOW_PASS},
-                {"label": "ECG removal", "value": ProcessTypology.ECG_REMOVAL},
+                {"label": "Band-pass filter", "value": ProcessTypology.BAND_PASS.value},
+                {"label": "High-pass filter", "value": ProcessTypology.HIGH_PASS.value},
+                {"label": "Low-pass filter", "value": ProcessTypology.LOW_PASS.value},
+                {"label": "ECG removal", "value": ProcessTypology.ECG_REMOVAL.value},
             ],
             value="0"
         ),

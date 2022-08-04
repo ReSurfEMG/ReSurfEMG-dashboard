@@ -240,9 +240,9 @@ def get_ecg_removal_layout(id_removal):
         dbc.Select(
             id=id_removal,
             options=[
-                {"label": "ICA", "value": EcgRemovalMethods.ICA},
-                {"label": "Gating", "value": EcgRemovalMethods.GATING},
-                {"label": "None", "value": EcgRemovalMethods.NONE},
+                {"label": "ICA", "value": EcgRemovalMethods.ICA.value},
+                {"label": "Gating", "value": EcgRemovalMethods.GATING.value},
+                {"label": "None", "value": EcgRemovalMethods.NONE.value},
             ],
             value="1"
         )
@@ -256,3 +256,65 @@ def get_idx_dict_list(dict_list, key, value):
                 if item[key] == value), None)
 
     return idx
+
+
+def build_cutter_params_json(step_number: int, percentage: int, tolerance: int):
+    data = {
+        'step_number': step_number,
+        'step_type': 'cut',
+        'percentage': percentage,
+        'tolerance': tolerance
+    }
+
+    return data
+
+
+def build_bandpass_params_json(step_number: int, low_frequency: int, high_frequency: int):
+    data = {
+        'step_number': step_number,
+        'step_type': 'bandpass',
+        'low_frequency': low_frequency,
+        'high_frequency': high_frequency
+    }
+
+    return data
+
+
+def build_highpass_params_json(step_number: int, cut_frequency: int):
+    data = {
+        'step_number': step_number,
+        'step_type': 'highpass',
+        'cut_frequency': cut_frequency
+    }
+
+    return data
+
+
+def build_lowpass_params_json(step_number: int, cut_frequency: int):
+    data = {
+        'step_number': step_number,
+        'step_type': 'lowpass',
+        'cut_frequency': cut_frequency
+    }
+
+    return data
+
+
+def build_ecgfilt_params_json(step_number: int, method: EcgRemovalMethods):
+    data = {
+        'step_number': step_number,
+        'step_type': 'ecg_removal',
+        'method': method.name
+    }
+
+    return data
+
+
+def build_envelope_params_json(step_number: int, method: EnvelopeMethod):
+    data = {
+        'step_number': step_number,
+        'step_type': 'envelope',
+        'method': method.name
+    }
+
+    return data

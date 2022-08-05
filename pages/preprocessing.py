@@ -88,6 +88,29 @@ envelope_card = dbc.Card([
 layout = html.Div([
     html.P(),
     dbc.Row([
+        html.Span([
+            html.Button(
+                className="fas fa-download",
+                id='download-data-btn',
+                style={'color': 'blue',
+                       'background': 'transparent',
+                       'border': 'none',
+                       'font-size': '34px'},
+                disabled=True,
+            ),
+            dbc.Tooltip(
+                "Save data",
+                id="tooltip-download-data",
+                target="download-data-btn",
+            )
+        ]),
+        dcc.Download(id="download-params"),
+        dcc.Download(id="download-emg-processed")
+    ],
+        style={'text-align': 'center'}
+    ),
+    html.P(),
+    dbc.Row([
         dbc.Col([
             dbc.Card([
                 dbc.CardHeader([
@@ -115,7 +138,12 @@ layout = html.Div([
                                 style={'color': 'blue',
                                        'background': 'transparent',
                                        'border': 'none',
-                                       'font-size': '34px'})
+                                       'font-size': '34px'}),
+                            dbc.Tooltip(
+                                "Add new step",
+                                id="tooltip-add-step",
+                                target="add-steps-btn",
+                            )
                         ],
                             style={'text-align': 'center'}
                         ),
@@ -130,7 +158,13 @@ layout = html.Div([
                                 style={'color': 'green',
                                        'background': 'transparent',
                                        'border': 'none',
-                                       'font-size': '34px'})
+                                       'font-size': '34px'}
+                        ),
+                        dbc.Tooltip(
+                            "Apply processing",
+                            id="tooltip-apply-pipeline",
+                            target="apply-pipeline-btn",
+                        )
                         ],
                             style={'text-align': 'center'}
                         ),
@@ -157,21 +191,5 @@ layout = html.Div([
         ], width=4),
         html.Div(id='load-preprocessing-div')
     ]),
-    dbc.Row([
-        html.Span([
-                html.Button(
-                    className="fas fa-download",
-                    id='download-data-btn',
-                    style={'color': 'blue',
-                           'background': 'transparent',
-                           'border': 'none',
-                           'font-size': '34px'}
-                ),
-                dbc.Label("SAVE DATA")
-        ]),
-        dcc.Download(id="download-params"),
-        dcc.Download(id="download-emg-processed")
-        ],
-        style={'text-align': 'center'}
-    )
+
 ])

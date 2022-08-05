@@ -13,6 +13,7 @@ from scipy.signal import find_peaks
 card_counter = 0
 json_parameters = []
 
+
 @callback(Output('preprocessing-original-container', 'children'),
           Input('load-preprocessing-div', 'data'))
 def show_raw_data(data):
@@ -30,6 +31,7 @@ def show_raw_data(data):
 
 
 @callback(Output('preprocessing-processed-container', 'children'),
+          Output('download-data-btn', 'disabled'),
           Input('apply-pipeline-btn', 'n_clicks'),
           State('tail-cut-percent', 'value'),
           State('tail-cut-tolerance', 'value'),
@@ -60,6 +62,8 @@ def show_data(click,
               additional_high_idx,
               additional_rem,
               additional_rem_idx):
+
+    save_data_enabled = False
 
     global json_parameters
     json_parameters.clear()
@@ -137,9 +141,11 @@ def show_data(click,
 
         children_emg = utils.add_emg_graphs(emg_env, sample_rate, titles)
 
+        save_data_enabled = False
     else:
         children_emg = []
-    return children_emg
+        save_data_enabled = True
+    return children_emg, save_data_enabled
 
 
 @callback(Output('pipeline-card-body', 'is_open'),
@@ -221,7 +227,6 @@ def download_data(click):
     params_file = dict(content=json.dumps(json_parameters), filename='parameters.txt')
 
     df = pd.DataFrame(variables.get_emg_processed().transpose())
-
     emg_file = dcc.send_data_frame(df.to_csv, 'emg.csv')
 
     return params_file, emg_file

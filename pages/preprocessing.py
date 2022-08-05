@@ -182,13 +182,26 @@ layout = html.Div([
                 html.Div(id='preprocessing-processed-container'),
             ]),
 
-        ], width=6),
+        ], width=9, id='processed-signals-column'),
         dbc.Col([
             dbc.Card([
-                dbc.CardHeader("Raw signals", style={'text-align': 'center'}),
-                html.Div(id='preprocessing-original-container'),
+                dbc.CardHeader([
+                    html.Button(
+                        className="fas fa-angle-left",
+                        id='open-column-btn',
+                        style={'color': 'blue',
+                               'background': 'transparent',
+                               'border': 'none',
+                               'font-size': '24px'},
+                    ),
+                    dbc.Label("Raw Signal"),
+                    ], style={'text-align': 'left'}
+                ),
+                dbc.Collapse([
+                    html.Div(id='preprocessing-original-container'),
+                ], is_open=False, id='collapse-raw')
             ]),
-        ], width=4),
+        ], width=1, id='raw-signals-column'),
         html.Div(id='load-preprocessing-div')
     ]),
 

@@ -1,4 +1,5 @@
 import dash_bootstrap_components as dbc
+import resurfemg.helper_functions as hf
 import numpy as np
 import plotly.graph_objects as go
 import trace_updater
@@ -6,6 +7,7 @@ from app import app
 from dash import dcc, html
 from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod
 from plotly_resampler import FigureResampler
+from scipy.signal import find_peaks
 from typing import Dict
 from uuid import uuid4
 
@@ -23,44 +25,7 @@ colors = {
 }
 
 
-def blank_fig(text=None):
-    """Creates a blank figure."""
-    fig = go.Figure(data=go.Scatter(x=[], y=[]))
-    fig.update_layout(
-        paper_bgcolor=colors['blue4'],
-        plot_bgcolor=colors['blue4'],
-        width=300,
-        height=300)
-
-    fig.update_xaxes(showgrid=False, showticklabels=False, zeroline=False)
-    fig.update_yaxes(showgrid=False, showticklabels=False, zeroline=False)
-
-    if text is not None:
-        fig.update_layout(
-            width=300,
-            height=300,
-            annotations=[
-                {
-                    "text": text,
-                    "xref": "paper",
-                    "yref": "paper",
-                    "showarrow": False,
-                    "font": {
-                        "size": 14,
-                        "color": colors['blue1']
-                    },
-                    "valign": "top",
-                    "yanchor": "top",
-                    "xanchor": "center",
-                    "yshift": 60,
-                    "xshift": 10
-                }
-            ]
-        )
-
-    return fig
-
-
+# build the layout for emg graphs
 def add_emg_graphs(emg_data, frequency, titles=None):
     if emg_data is None:
         return []
@@ -127,6 +92,7 @@ def add_emg_graphs(emg_data, frequency, titles=None):
     return graphs
 
 
+# build the layout for ventilator graphs
 def add_ventilator_graphs(vent_data, frequency):
     if vent_data is None:
         return []
@@ -165,16 +131,19 @@ def add_ventilator_graphs(vent_data, frequency):
     return graphs
 
 
+# get the time array, computed from the sampling rate
 def get_time_array(data_size, frequency):
     time_array = np.arange(0, data_size / frequency, 1 / frequency)
 
     return time_array
 
 
+# function needed to update graphs using plotly_resampler
 def get_dict(graph_id_dict, relayoutdata):
     return graph_dict_raw.get(graph_id_dict["index"]).construct_update_data(relayoutdata)
 
 
+# get the layout for the band pass filter card
 def get_band_pass_layout(id_low, id_high):
     layout = [
         dbc.Row([
@@ -202,6 +171,7 @@ def get_band_pass_layout(id_low, id_high):
     return layout
 
 
+# get the layout for the high pass filter card
 def get_high_pass_layout(id_low):
     layout = [
         dbc.Col([
@@ -218,6 +188,7 @@ def get_high_pass_layout(id_low):
     return layout
 
 
+# get the layout for the low pass filter card
 def get_low_pass_layout(id_low):
     layout = [
         dbc.Col([
@@ -234,6 +205,7 @@ def get_low_pass_layout(id_low):
     return layout
 
 
+# get the layout for the ecg removal filter card
 def get_ecg_removal_layout(id_removal):
     layout = [
         dbc.Label("ECG removal method"),
@@ -251,6 +223,40 @@ def get_ecg_removal_layout(id_removal):
     return layout
 
 
+# get the layout fot the new processing step card
+def get_new_step_body(index):
+    new_card = dbc.Card([
+        dbc.CardHeader([
+            html.Button(
+                html.I(className="fas fa-times", style={'color': 'red'}),
+                className="ml-auto close",
+                id={"type": "step-close-button", "index": str(index)},
+                style={'border': 'none',
+                       'background': 'transparent'}
+            ),
+            dbc.Label("Additional step")
+        ]),
+        dbc.Label("Step type"),
+        dbc.Select(
+            id={"type": "additional-step-type", "index": str(index)},
+            options=[
+                {"label": "", "value": "0"},
+                {"label": "Band-pass filter", "value": ProcessTypology.BAND_PASS.value},
+                {"label": "High-pass filter", "value": ProcessTypology.HIGH_PASS.value},
+                {"label": "Low-pass filter", "value": ProcessTypology.LOW_PASS.value},
+                {"label": "ECG removal", "value": ProcessTypology.ECG_REMOVAL.value},
+            ],
+            value="0"
+        ),
+        html.Div([], id={"type": "additional-step-core", "index": str(index)})
+    ],
+        id={"type": "additional-step-card", "index": str(index)})
+
+    return new_card
+
+
+# get the index of the dict containing the key-value
+# in a list of dicts
 def get_idx_dict_list(dict_list, key, value):
     idx = next((i for i, item in enumerate(dict_list)
                 if item[key] == value), None)
@@ -258,6 +264,51 @@ def get_idx_dict_list(dict_list, key, value):
     return idx
 
 
+# compute the envelope, using the method selected
+def get_envelope(envelope_method: int, emg_signal, sample_rate):
+    if envelope_method == EnvelopeMethod.RMS.value:
+        # I set the window here to 100ms, but this may be changed
+        if emg_signal.ndim == 1:
+            emg_env = hf.full_rolling_rms(abs(emg_signal), int(sample_rate / 10))
+        else:
+            emg_env = np.array([hf.full_rolling_rms(lead, int(sample_rate / 10)) for lead in abs(emg_signal)])
+    elif envelope_method == EnvelopeMethod.FILTERING.value:
+        # THIS SHOULD BE CHANGED TO LOW PASS!
+        emg_env = hf.emg_highpass_butter(abs(emg_signal), 150, sample_rate)
+    else:
+        emg_env = emg_signal
+
+    return emg_env
+
+
+# apply the ecg removal, using the method selected
+def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
+    if removal_method == EcgRemovalMethods.ICA.value:
+        emg_ica = hf.compute_ICA_two_comp(emg_signal)
+        ecg_lead = emg_signal[0]
+
+        emg_ecg = hf.pick_lowest_correlation_array(emg_ica, ecg_lead)
+
+        titles = ["Filtered Track 2"]
+    elif removal_method == EcgRemovalMethods.GATING.value:
+        # TODO: change with QRS identification when available in library
+        peak_width = 0.001
+        peak_fraction = 0.40
+        ecg_rms = hf.full_rolling_rms(emg_signal[0, :], 10)
+        peak_height = peak_fraction * (max(ecg_rms) - min(ecg_rms))
+        ecg_peaks, _ = find_peaks(ecg_rms, height=peak_height, width=peak_width * sample_rate)
+
+        emg_ecg = hf.gating(emg_signal[2, :], ecg_peaks, method=0)
+
+        titles = ["Filtered Track 2"]
+    else:
+        emg_ecg = emg_signal
+        titles = None
+
+    return emg_ecg, titles
+
+
+# build the json containing the params for the cutter
 def build_cutter_params_json(step_number: int, percentage: int, tolerance: int):
     data = {
         'step_number': step_number,
@@ -269,6 +320,7 @@ def build_cutter_params_json(step_number: int, percentage: int, tolerance: int):
     return data
 
 
+# build the json containing the params for the band pass filter
 def build_bandpass_params_json(step_number: int, low_frequency: int, high_frequency: int):
     data = {
         'step_number': step_number,
@@ -280,6 +332,7 @@ def build_bandpass_params_json(step_number: int, low_frequency: int, high_freque
     return data
 
 
+# build the json containing the params for the high pass filter
 def build_highpass_params_json(step_number: int, cut_frequency: int):
     data = {
         'step_number': step_number,
@@ -290,6 +343,7 @@ def build_highpass_params_json(step_number: int, cut_frequency: int):
     return data
 
 
+# build the json containing the params for the low pass filter
 def build_lowpass_params_json(step_number: int, cut_frequency: int):
     data = {
         'step_number': step_number,
@@ -300,6 +354,7 @@ def build_lowpass_params_json(step_number: int, cut_frequency: int):
     return data
 
 
+# build the json containing the params for the ecg removal
 def build_ecgfilt_params_json(step_number: int, method: EcgRemovalMethods):
     data = {
         'step_number': step_number,
@@ -310,6 +365,7 @@ def build_ecgfilt_params_json(step_number: int, method: EcgRemovalMethods):
     return data
 
 
+# build the json containing the params for the envelope extraction
 def build_envelope_params_json(step_number: int, method: EnvelopeMethod):
     data = {
         'step_number': step_number,

@@ -261,3 +261,27 @@ def download_data(click):
     emg_file = dcc.send_data_frame(df.to_csv, 'emg.csv')
 
     return params_file, emg_file
+
+
+# expand/shrink raw data column
+@callback(Output('raw-signals-column', 'width'),
+          Output('processed-signals-column', 'width'),
+          Output('collapse-raw', 'is_open'),
+          Output('open-column-btn', 'className'),
+          Input('open-column-btn', 'n_clicks'),
+          State('raw-signals-column', 'width'),
+          prevent_initial_call=True)
+def open_column(click, current_width):
+
+    if current_width == 1:
+        original_width = 4
+        processed_width = 6
+        open_card = True
+        btn_class = "fas fa-angle-right"
+    else:
+        original_width = 1
+        processed_width = 9
+        open_card = False
+        btn_class = "fas fa-angle-left"
+
+    return original_width, processed_width, open_card, btn_class

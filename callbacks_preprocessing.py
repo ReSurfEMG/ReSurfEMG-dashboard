@@ -1,13 +1,13 @@
+import base64
 import dash
 import json
-import utils
 import numpy as np
 import pandas as pd
+import utils
 from app import variables
 from dash import Input, Output, State, callback, MATCH, ALL, html, ctx, dcc
 from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod
 from resurfemg import helper_functions as hf
-
 
 card_counter = 0
 json_parameters = []
@@ -63,7 +63,6 @@ def show_data(click,
               additional_high_idx,
               additional_rem,
               additional_rem_idx):
-
     # variables initialization
     global json_parameters
     json_parameters.clear()
@@ -109,7 +108,7 @@ def show_data(click,
                 new_step_emg = hf.emg_bandpass_butter_sample(new_step_emg,
                                                              low_cut, high_cut,
                                                              sample_rate)
-                json_parameters.append(utils.build_bandpass_params_json(len(json_parameters)+1,
+                json_parameters.append(utils.build_bandpass_params_json(len(json_parameters) + 1,
                                                                         low_cut,
                                                                         high_cut))
 
@@ -120,7 +119,7 @@ def show_data(click,
                 new_step_emg = hf.emg_highpass_butter(new_step_emg,
                                                       low_cut,
                                                       sample_rate)
-                json_parameters.append(utils.build_highpass_params_json(len(json_parameters)+1,
+                json_parameters.append(utils.build_highpass_params_json(len(json_parameters) + 1,
                                                                         low_cut))
 
             elif step == ProcessTypology.LOW_PASS.value:
@@ -129,7 +128,7 @@ def show_data(click,
 
                 # TODO: add function when it will be available in helper_functions
                 # new_step_emg = hf.emg_lowpass_butter(new_step_emg, low_cut, sample_rate)
-                #json_parameters.append(utils.build_lowpass_params_json(n + 5, high_cut))
+                # json_parameters.append(utils.build_lowpass_params_json(n + 5, high_cut))
 
             elif step == ProcessTypology.ECG_REMOVAL.value:
                 idx = utils.get_idx_dict_list(additional_rem_idx, 'index', card_id)
@@ -146,15 +145,15 @@ def show_data(click,
                     tmp_matrix = new_step_emg
 
                 new_step_emg, titles = utils.apply_ecg_removal(ecg_additional_method,
-                                                         tmp_matrix,
-                                                         sample_rate)
-                json_parameters.append(utils.build_ecgfilt_params_json(len(json_parameters)+1,
+                                                               tmp_matrix,
+                                                               sample_rate)
+                json_parameters.append(utils.build_ecgfilt_params_json(len(json_parameters) + 1,
                                                                        EcgRemovalMethods(ecg_additional_method)
                                                                        ))
 
         # At the end, extract the envelope
         emg_env = utils.get_envelope(envelope_method, new_step_emg, sample_rate)
-        json_parameters.append(utils.build_envelope_params_json(len(json_parameters)+1,
+        json_parameters.append(utils.build_envelope_params_json(len(json_parameters) + 1,
                                                                 EnvelopeMethod(envelope_method)
                                                                 ))
 
@@ -164,7 +163,7 @@ def show_data(click,
         children_emg = utils.add_emg_graphs(emg_env, sample_rate, titles)
         # enable the data download
         save_data_enabled = False
-    else: # if no data have been uploaded
+    else:  # if no data have been uploaded
         children_emg = []
         save_data_enabled = True
 
@@ -192,9 +191,10 @@ def collapse_graph(toggle_value):
 @callback(Output('custom-preprocessing-steps', 'children'),
           Input('add-steps-btn', 'n_clicks'),
           Input({"type": "step-close-button", "index": ALL}, "n_clicks"),
+          Input('upload-processing-params', 'contents'),
           State('custom-preprocessing-steps', 'children'),
           prevent_initial_call=False)
-def add_step(click, close, previous_content):
+def add_step(click, close, params_file, previous_content):
     global card_counter
 
     id_ctx = ctx.triggered_id
@@ -211,13 +211,17 @@ def add_step(click, close, previous_content):
             updated_content = new_card
         else:
             updated_content = previous_content + [new_card, html.P()]
+    # if the param file has been added
+    elif id_ctx == 'upload-processing-params':
+        card_counter = 0
+        updated_content = populate_additional_steps(params_file)
     # if the remove button is clicked, remove the card
     else:
         remove_idx = id_ctx['index']
         for n, el in enumerate(previous_content):
             if el['type'] == 'Card' and el['props']['id']['index'] == remove_idx:
-                del previous_content[n + 1] # remove the html.P element
-                previous_content.remove(el) # remove the card
+                del previous_content[n + 1]  # remove the html.P element
+                previous_content.remove(el)  # remove the card
 
         updated_content = previous_content
 
@@ -230,7 +234,6 @@ def add_step(click, close, previous_content):
           State({"type": "additional-step-core", "index": MATCH}, "id"),
           prevent_initial_call=True)
 def get_body(selected_value, card_id):
-
     new_section = []
     if selected_value == ProcessTypology.BAND_PASS.value:
         new_section = utils.get_band_pass_layout({"type": "additional-step-low", "index": card_id['index']},
@@ -251,7 +254,6 @@ def get_body(selected_value, card_id):
           Input('download-data-btn', 'n_clicks'),
           prevent_initial_call=True)
 def download_data(click):
-
     # build the params file
     params_file = dict(content=json.dumps(json_parameters), filename='parameters.txt')
 
@@ -272,7 +274,6 @@ def download_data(click):
           State('raw-signals-column', 'width'),
           prevent_initial_call=True)
 def open_column(click, current_width):
-
     if current_width == 1:
         original_width = 4
         processed_width = 6
@@ -285,3 +286,68 @@ def open_column(click, current_width):
         btn_class = "fas fa-angle-left"
 
     return original_width, processed_width, open_card, btn_class
+
+
+# upload json with params
+@callback(Output('tail-cut-percent', 'value'),
+          Output('tail-cut-tolerance', 'value'),
+          Output('base-filter-low', 'value'),
+          Output('base-filter-high', 'value'),
+          Output('ecg-filter-select', 'value'),
+          Output('envelope-extraction-select', 'value'),
+          Input('upload-processing-params', 'contents'),
+          prevent_initial_call=True)
+def populate_steps(params_file):
+    content_type, content_string = params_file.split(',')
+    decoded = base64.b64decode(content_string).decode('utf8')
+    data = json.loads(decoded)
+
+    first_cut_percentage = data[0]['percentage']
+    first_cut_tolerance = data[0]['tolerance']
+    bandpass_low = data[1]['low_frequency']
+    bandpass_high = data[1]['high_frequency']
+
+    ecg_removal = data[3]['method']
+    ecg_removal_value = utils.get_ecg_removal_value(ecg_removal)
+
+    envelope = data[-1]['method']
+    envelope_value = utils.get_envelope_method_value(envelope)
+
+    return first_cut_percentage, first_cut_tolerance, bandpass_low, bandpass_high, ecg_removal_value, envelope_value
+
+
+def populate_additional_steps(params_file):
+    core_body = []
+    global card_counter
+
+    content_type, content_string = params_file.split(',')
+    decoded = base64.b64decode(content_string).decode('utf8')
+    data = json.loads(decoded)
+
+    for steps_index in range(4, len(data) - 1):
+        step_type = data[steps_index]['step_type']
+        card_counter += 1
+        if step_type == ProcessTypology.BAND_PASS.name:
+            new_card = utils.get_band_pass_layout({"type": "additional-step-low", "index": card_counter},
+                                                  {"type": "additional-step-high", "index": card_counter},
+                                                  data[steps_index]['low_frequency'],
+                                                  data[steps_index]['high_frequency'])
+            list_value = ProcessTypology.BAND_PASS.value
+        elif step_type == ProcessTypology.HIGH_PASS.name:
+            new_card = utils.get_high_pass_layout({"type": "additional-step-low", "index": card_counter},
+                                                  data[steps_index]['cut_frequency'])
+            list_value = ProcessTypology.HIGH_PASS.value
+        elif step_type == ProcessTypology.LOW_PASS.name:
+            new_card = utils.get_high_pass_layout({"type": "additional-step-high", "index": card_counter},
+                                                  data[steps_index]['cut_frequency'])
+            list_value = ProcessTypology.LOW_PASS.value
+        elif step_type == ProcessTypology.ECG_REMOVAL.name:
+            ecg_removal_value = utils.get_ecg_removal_value(data[steps_index]['method'])
+            new_card = utils.get_ecg_removal_layout({"type": "additional-step-removal", "index": card_counter},
+                                                    data[steps_index]['method'])
+            list_value = ProcessTypology.ECG_REMOVAL.value
+
+        steps_body = utils.get_new_step_body(card_counter, list_value, new_card)
+        core_body = core_body + [steps_body, html.P()]
+
+    return core_body

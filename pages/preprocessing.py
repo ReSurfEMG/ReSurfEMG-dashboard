@@ -1,5 +1,6 @@
 import dash
 import dash_bootstrap_components as dbc
+import dash_uploader as du
 from dash import html, dcc
 from definitions import EcgRemovalMethods, EnvelopeMethod
 
@@ -124,6 +125,22 @@ layout = html.Div([
                 dbc.Collapse([
                     html.P(),
                     dbc.Col([
+                        dbc.Row([
+                            dcc.Upload(
+                                id='upload-processing-params',
+                                children=html.Div([
+                                    'Drag and Drop or Select Files'
+                                ]),
+                                style={
+                                    'lineHeight': '60px',
+                                    'borderWidth': '1px',
+                                    'borderStyle': 'dashed',
+                                    'borderRadius': '5px',
+                                    'textAlign': 'center',
+                                    'margin': '10px'
+                                },
+                            )
+                        ]),
                         tailcut_card,
                         html.P(),
                         baseline_card,
@@ -131,6 +148,7 @@ layout = html.Div([
                         ecg_card,
                         html.P(),
                         html.Div([], id='custom-preprocessing-steps'),
+                        html.Div([], id='test-preprocessing-steps'),
                         html.Div([
                             html.Button(
                                 className="fas fa-plus-circle",

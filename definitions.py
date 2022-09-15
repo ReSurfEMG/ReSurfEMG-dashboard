@@ -2,10 +2,12 @@ from enum import Enum
 
 
 class ProcessTypology(Enum):
+    CUT = '0'
     BAND_PASS = '1'
     HIGH_PASS = '2'
     LOW_PASS = '3'
     ECG_REMOVAL = '4'
+    ENVELOPE = '5'
 
 
 class EcgRemovalMethods(Enum):

@@ -127,20 +127,22 @@ layout = html.Div([
                     dbc.Col([
                         dbc.Row([
                             dcc.Upload(
+                                className="fas fa-upload",
                                 id='upload-processing-params',
-                                children=html.Div([
-                                    'Drag and Drop or Select Files'
-                                ]),
-                                style={
-                                    'lineHeight': '60px',
-                                    'borderWidth': '1px',
-                                    'borderStyle': 'dashed',
-                                    'borderRadius': '5px',
-                                    'textAlign': 'center',
-                                    'margin': '10px'
-                                },
+                                style={'color': 'blue',
+                                       'background': 'transparent',
+                                       'border': 'none',
+                                       'font-size': '34px'},
+                            ),
+                            dbc.Tooltip(
+                                "Upload the parameters file",
+                                id="tooltip-upload-params",
+                                target="upload-processing-params",
                             )
-                        ]),
+                        ],
+                            style={'text-align': 'center'}),
+                        html.Div("Upload the parameters file",
+                                 style={'text-align': 'center'}),
                         tailcut_card,
                         html.P(),
                         baseline_card,
@@ -171,21 +173,21 @@ layout = html.Div([
                     html.P(),
                     html.Div([
                         html.Button(
-                                className="fas fa-play",
-                                id='apply-pipeline-btn',
-                                style={'color': 'green',
-                                       'background': 'transparent',
-                                       'border': 'none',
-                                       'font-size': '34px'}
+                            className="fas fa-play",
+                            id='apply-pipeline-btn',
+                            style={'color': 'green',
+                                   'background': 'transparent',
+                                   'border': 'none',
+                                   'font-size': '34px'}
                         ),
                         dbc.Tooltip(
                             "Apply processing",
                             id="tooltip-apply-pipeline",
                             target="apply-pipeline-btn",
                         )
-                        ],
-                            style={'text-align': 'center'}
-                        ),
+                    ],
+                        style={'text-align': 'center'}
+                    ),
                     html.P(),
 
                 ],
@@ -213,7 +215,7 @@ layout = html.Div([
                                'font-size': '24px'},
                     ),
                     dbc.Label("Raw Signal"),
-                    ], style={'text-align': 'left'}
+                ], style={'text-align': 'left'}
                 ),
                 dbc.Collapse([
                     html.Div(id='preprocessing-original-container'),
@@ -222,5 +224,9 @@ layout = html.Div([
         ], width=1, id='raw-signals-column'),
         html.Div(id='load-preprocessing-div')
     ]),
-
+    html.P(),
+    dcc.ConfirmDialog(
+        id='confirm-upload',
+        message='Uploading the parameters will overwrite the current settings. Are you sure you want to continue?',
+    ),
 ])

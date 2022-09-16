@@ -1,7 +1,9 @@
+import base64
 import dash_bootstrap_components as dbc
-import resurfemg.helper_functions as hf
+import json
 import numpy as np
 import plotly.graph_objects as go
+import resurfemg.helper_functions as hf
 import trace_updater
 from app import app
 from dash import dcc, html
@@ -211,7 +213,7 @@ def get_low_pass_layout(id_low, cut_frequency=450):
 
 
 # get the layout for the ecg removal filter card
-def get_ecg_removal_layout(id_removal, value):
+def get_ecg_removal_layout(id_removal, value="1"):
     layout = [
         dbc.Label("ECG removal method"),
         dbc.Select(
@@ -221,7 +223,7 @@ def get_ecg_removal_layout(id_removal, value):
                 {"label": "Gating", "value": EcgRemovalMethods.GATING.value},
                 {"label": "None", "value": EcgRemovalMethods.NONE.value},
             ],
-            value="1"
+            value=value
         )
     ]
 
@@ -401,3 +403,46 @@ def get_envelope_method_value(method_name):
             envelope_value = envelope_method.value
 
     return envelope_value
+
+
+def param_file_to_json(param_file):
+    content_type, content_string = param_file.split(',')
+    decoded = base64.b64decode(content_string).decode('utf8')
+    data = json.loads(decoded)
+
+    return data
+
+
+def upload_additional_steps(params_file):
+    core_body = []
+    card_counter_local = 0
+
+    data = param_file_to_json(params_file)
+
+    for steps_index in range(4, len(data) - 1):
+        step_type = data[steps_index]['step_type']
+        card_counter_local += 1
+        if step_type == ProcessTypology.BAND_PASS.name:
+            new_card = get_band_pass_layout({"type": "additional-step-low", "index": str(card_counter_local)},
+                                            {"type": "additional-step-high", "index": str(card_counter_local)},
+                                            data[steps_index]['low_frequency'],
+                                            data[steps_index]['high_frequency'])
+            list_value = ProcessTypology.BAND_PASS.value
+        elif step_type == ProcessTypology.HIGH_PASS.name:
+            new_card = get_high_pass_layout({"type": "additional-step-low", "index": str(card_counter_local)},
+                                            data[steps_index]['cut_frequency'])
+            list_value = ProcessTypology.HIGH_PASS.value
+        elif step_type == ProcessTypology.LOW_PASS.name:
+            new_card = get_high_pass_layout({"type": "additional-step-high", "index": str(card_counter_local)},
+                                            data[steps_index]['cut_frequency'])
+            list_value = ProcessTypology.LOW_PASS.value
+        elif step_type == ProcessTypology.ECG_REMOVAL.name:
+            ecg_removal_value = get_ecg_removal_value(data[steps_index]['method'])
+            new_card = get_ecg_removal_layout({"type": "additional-step-removal", "index": str(card_counter_local)},
+                                              data[steps_index]['method'])
+            list_value = ProcessTypology.ECG_REMOVAL.value
+
+        steps_body = get_new_step_body(card_counter_local, list_value, new_card)
+        core_body = core_body + [steps_body, html.P()]
+
+    return core_body, card_counter_local

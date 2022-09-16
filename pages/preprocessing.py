@@ -126,9 +126,20 @@ layout = html.Div([
                     html.P(),
                     dbc.Col([
                         dbc.Row([
+                            dbc.Alert(
+                                "The file is not valid",
+                                id="alert-invalid-file",
+                                dismissable=True,
+                                is_open=False,
+                                duration=4000,
+                                color="danger",
+                                style={'width': 'auto',
+                                       'left': '18px'}
+                            ),
                             dcc.Upload(
                                 className="fas fa-upload",
                                 id='upload-processing-params',
+                                accept='application/json',
                                 style={'color': 'blue',
                                        'background': 'transparent',
                                        'border': 'none',

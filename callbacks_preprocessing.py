@@ -5,7 +5,7 @@ import pandas as pd
 import utils
 from app import variables
 from dash import Input, Output, State, callback, MATCH, ALL, html, ctx, dcc
-from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod
+from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod, FILE_IDENTIFIER
 from resurfemg import helper_functions as hf
 
 card_counter = 0
@@ -64,7 +64,11 @@ def show_data(click,
               additional_rem_idx):
     # variables initialization
     global json_parameters
+
+    # Reset the list of processing steps parameters
     json_parameters.clear()
+    # Added to easily verify the file compatibility when uploaded
+    json_parameters.append({'file_identifier': FILE_IDENTIFIER})
 
     emg_data = variables.get_emg()
     sample_rate = variables.get_emg_freq()
@@ -211,12 +215,12 @@ def add_step(click, close, confirm, params_file, previous_content):
             updated_content = new_card
         else:
             updated_content = previous_content + [new_card, html.P()]
-    # if the param file has been added
+    # if the param file has been added (after button confirmation)
     elif id_ctx == 'confirm-upload':
         if confirm:
             card_counter = 0
             updated_content, card_counter = utils.upload_additional_steps(params_file)
-        else:
+        else: # if the operation is cancelled, do nothing
             updated_content = previous_content
     # if the remove button is clicked, remove the card
     else:
@@ -258,7 +262,7 @@ def get_body(selected_value, card_id):
           prevent_initial_call=True)
 def download_data(click):
     # build the params file
-    params_file = dict(content=json.dumps(json_parameters), filename='parameters.txt')
+    params_file = dict(content=json.dumps(json_parameters), filename='parameters.json')
 
     # build the csv file with the processed signal
     # to use the dcc.Download element, we need to convert the np array into a dataframe
@@ -293,12 +297,23 @@ def open_column(click, current_width):
 
 # upload json with params
 @callback(Output('confirm-upload', 'displayed'),
+          Output('alert-invalid-file', 'is_open'),
           Input('upload-processing-params', 'contents'),
           prevent_initial_call=True)
 def populate_steps(params_file):
-    return True
+    data = utils.param_file_to_json(params_file)
+    # check if the file is correct
+    if utils.get_idx_dict_list(data, 'file_identifier', FILE_IDENTIFIER) == 0:
+        open_confirmation = True
+        open_alert = False
+    else:
+        open_confirmation = False
+        open_alert = True
+
+    return open_confirmation, open_alert
 
 
+# the user confirms the params upload
 @callback(Output('tail-cut-percent', 'value'),
           Output('tail-cut-tolerance', 'value'),
           Output('base-filter-low', 'value'),
@@ -314,12 +329,12 @@ def populate_steps(confirm, params_file):
 
         data = utils.param_file_to_json(params_file)
 
-        first_cut_percentage = data[0]['percentage']
-        first_cut_tolerance = data[0]['tolerance']
-        bandpass_low = data[1]['low_frequency']
-        bandpass_high = data[1]['high_frequency']
+        first_cut_percentage = data[1]['percentage']
+        first_cut_tolerance = data[1]['tolerance']
+        bandpass_low = data[2]['low_frequency']
+        bandpass_high = data[2]['high_frequency']
 
-        ecg_removal = data[3]['method']
+        ecg_removal = data[4]['method']
         ecg_removal_value = utils.get_ecg_removal_value(ecg_removal)
 
         envelope = data[-1]['method']

@@ -268,7 +268,7 @@ def get_new_step_body(index, selected_value="0", core_body=None):
 # in a list of dicts
 def get_idx_dict_list(dict_list, key, value):
     idx = next((i for i, item in enumerate(dict_list)
-                if item[key] == value), None)
+                if item.__contains__(key) and item[key] == value), None)
 
     return idx
 
@@ -419,7 +419,7 @@ def upload_additional_steps(params_file):
 
     data = param_file_to_json(params_file)
 
-    for steps_index in range(4, len(data) - 1):
+    for steps_index in range(5, len(data) - 1):
         step_type = data[steps_index]['step_type']
         card_counter_local += 1
         if step_type == ProcessTypology.BAND_PASS.name:

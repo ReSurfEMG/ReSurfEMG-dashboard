@@ -1,5 +1,7 @@
 from enum import Enum
 
+FILE_IDENTIFIER = 'resurfemg_paramfile'
+
 
 class ProcessTypology(Enum):
     CUT = '0'

@@ -4,11 +4,13 @@ import json
 import numpy as np
 import plotly.graph_objects as go
 import resurfemg.helper_functions as hf
+import resurfemg.multi_lead_type as mlt
 import trace_updater
 from app import app
 from dash import dcc, html
 from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod
 from plotly_resampler import FigureResampler
+from plotly.subplots import make_subplots
 from scipy.signal import find_peaks
 from typing import Dict
 from uuid import uuid4
@@ -28,7 +30,7 @@ colors = {
 
 
 # build the layout for emg graphs
-def add_emg_graphs(emg_data, frequency, titles=None):
+def add_emg_graphs(emg_data, frequency, titles=None, default_processed=None):
     if emg_data is None:
         return []
 
@@ -37,9 +39,13 @@ def add_emg_graphs(emg_data, frequency, titles=None):
     if emg_data.ndim == 1:
         leads_n = 1
         time_array = get_time_array(emg_data.shape[0], frequency)
+        if default_processed is not None:
+            time_array_processed = get_time_array(default_processed.shape[0], frequency)
     else:
         leads_n = emg_data.shape[0]
         time_array = get_time_array(emg_data.shape[1], frequency)
+        if default_processed is not None:
+            time_array_processed = get_time_array(default_processed.shape[1], frequency)
 
     for i in range(leads_n):
 
@@ -47,18 +53,29 @@ def add_emg_graphs(emg_data, frequency, titles=None):
 
         if leads_n == 1:
             y = emg_data
+            if default_processed is not None:
+                y_default_process = default_processed
         else:
             y = emg_data[i]
+            if default_processed is not None:
+                y_default_process = default_processed[i]
 
         if titles is None:
             fig_title = "EMG Track " + str(i)
         else:
             fig_title = titles[i]
 
-        fig = FigureResampler(go.Figure())
-        fig.add_trace(go.Scatter(),
+        fig = FigureResampler(make_subplots(specs=[[{"secondary_y": True}]]))
+        fig.add_trace(go.Scatter(name="Current processing"),
                       hf_x=time_array,
                       hf_y=y)
+        if default_processed is not None:
+            fig.add_trace(go.Scatter(name="Default processing"),
+                          hf_x=time_array_processed,
+                          hf_y=y_default_process,
+                          row=1,
+                          col=1,
+                          secondary_y=True)
 
         fig.update_layout(
             xaxis_title="Time [s]",
@@ -292,13 +309,20 @@ def get_envelope(envelope_method: int, emg_signal, sample_rate):
 
 # apply the ecg removal, using the method selected
 def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
+    emg_ecg = []
+    titles = []
+
     if removal_method == EcgRemovalMethods.ICA.value:
-        emg_ica = hf.compute_ICA_two_comp(emg_signal)
         ecg_lead = emg_signal[0]
 
-        emg_ecg = hf.pick_lowest_correlation_array(emg_ica, ecg_lead)
+        for lead in range(1, emg_signal.shape[0]):
+            emg_ica = mlt.compute_ICA_two_comp_selective(emg_signal, False, (0, lead))
+            emg_clean = hf.pick_lowest_correlation_array(emg_ica, ecg_lead)
+            emg_ecg.append(emg_clean)
+            titles.append("Filtered Track " + str(lead))
 
-        titles = ["Filtered Track 2"]
+        emg_ecg = np.array(emg_ecg)
+
     elif removal_method == EcgRemovalMethods.GATING.value:
         # TODO: change with QRS identification when available in library
         peak_width = 0.001
@@ -307,9 +331,13 @@ def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
         peak_height = peak_fraction * (max(ecg_rms) - min(ecg_rms))
         ecg_peaks, _ = find_peaks(ecg_rms, height=peak_height, width=peak_width * sample_rate)
 
-        emg_ecg = hf.gating(emg_signal[2, :], ecg_peaks, method=0)
+        for lead in range(1, emg_signal.shape[0]):
+            emg_clean = hf.gating(emg_signal[lead, :], ecg_peaks, method=0)
+            emg_ecg.append(emg_clean)
+            titles.append("Filtered Track " + str(lead))
 
-        titles = ["Filtered Track 2"]
+        emg_ecg = np.array(emg_ecg)
+
     else:
         emg_ecg = emg_signal
         titles = None

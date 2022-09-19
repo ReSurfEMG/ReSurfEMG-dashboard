@@ -163,8 +163,22 @@ def show_data(click,
 
         # store the processed signal
         variables.set_emg_processed(emg_env)
+        # if the processing is the default one, store it
+        if ctx.triggered_id != 'apply-pipeline-btn':
+            preprocessed_def = np.insert(emg_env, 0, emg_cut_final[0], 0)
+            variables.set_emg_processed_default(preprocessed_def)
         # update the graphs
-        children_emg = utils.add_emg_graphs(emg_env, sample_rate, titles)
+
+        leads_displayed = emg_env.shape[0]
+        preprocessed_def = variables.get_emg_processed_default()
+        if leads_displayed != preprocessed_def.shape[0]:
+            # in case the dimension is different, the ecg lead is not included
+            preprocessed_def = preprocessed_def[1:leads_displayed+1, :]
+
+        children_emg = utils.add_emg_graphs(emg_env,
+                                            sample_rate,
+                                            titles,
+                                            preprocessed_def)
         # enable the data download
         save_data_enabled = False
     else:  # if no data have been uploaded

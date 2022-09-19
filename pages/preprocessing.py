@@ -154,6 +154,7 @@ layout = html.Div([
                             style={'text-align': 'center'}),
                         html.Div("Upload the parameters file",
                                  style={'text-align': 'center'}),
+
                         tailcut_card,
                         html.P(),
                         baseline_card,
@@ -162,6 +163,7 @@ layout = html.Div([
                         html.P(),
                         html.Div([], id='custom-preprocessing-steps'),
                         html.Div([], id='test-preprocessing-steps'),
+
                         html.Div([
                             html.Button(
                                 className="fas fa-plus-circle",

@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 FILE_IDENTIFIER = 'resurfemg_paramfile'
 
 

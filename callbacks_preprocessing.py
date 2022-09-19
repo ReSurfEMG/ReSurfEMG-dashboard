@@ -8,6 +8,7 @@ from dash import Input, Output, State, callback, MATCH, ALL, html, ctx, dcc
 from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod, FILE_IDENTIFIER
 from resurfemg import helper_functions as hf
 
+
 card_counter = 0
 json_parameters = []
 
@@ -241,6 +242,7 @@ def add_step(click, close, confirm, params_file, previous_content):
           State({"type": "additional-step-core", "index": MATCH}, "id"),
           prevent_initial_call=True)
 def get_body(selected_value, card_id):
+
     new_section = []
     if selected_value == ProcessTypology.BAND_PASS.value:
         new_section = utils.get_band_pass_layout({"type": "additional-step-low", "index": card_id['index']},
@@ -341,4 +343,3 @@ def populate_steps(confirm, params_file):
         envelope_value = utils.get_envelope_method_value(envelope)
 
         return first_cut_percentage, first_cut_tolerance, bandpass_low, bandpass_high, ecg_removal_value, envelope_value
-

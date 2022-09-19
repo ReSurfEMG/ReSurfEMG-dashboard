@@ -1,6 +1,6 @@
 #  environment document
 
-name: emgdash
+name: dashboard
 channels:
   - conda-forge
 dependencies:

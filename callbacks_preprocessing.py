@@ -1,11 +1,11 @@
 import dash
 import json
-import utils
 import numpy as np
 import pandas as pd
+import utils
 from app import variables
 from dash import Input, Output, State, callback, MATCH, ALL, html, ctx, dcc
-from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod
+from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod, FILE_IDENTIFIER
 from resurfemg import helper_functions as hf
 
 
@@ -63,10 +63,13 @@ def show_data(click,
               additional_high_idx,
               additional_rem,
               additional_rem_idx):
-
     # variables initialization
     global json_parameters
+
+    # Reset the list of processing steps parameters
     json_parameters.clear()
+    # Added to easily verify the file compatibility when uploaded
+    json_parameters.append({'file_identifier': FILE_IDENTIFIER})
 
     emg_data = variables.get_emg()
     sample_rate = variables.get_emg_freq()
@@ -109,7 +112,7 @@ def show_data(click,
                 new_step_emg = hf.emg_bandpass_butter_sample(new_step_emg,
                                                              low_cut, high_cut,
                                                              sample_rate)
-                json_parameters.append(utils.build_bandpass_params_json(len(json_parameters)+1,
+                json_parameters.append(utils.build_bandpass_params_json(len(json_parameters) + 1,
                                                                         low_cut,
                                                                         high_cut))
 
@@ -120,7 +123,7 @@ def show_data(click,
                 new_step_emg = hf.emg_highpass_butter(new_step_emg,
                                                       low_cut,
                                                       sample_rate)
-                json_parameters.append(utils.build_highpass_params_json(len(json_parameters)+1,
+                json_parameters.append(utils.build_highpass_params_json(len(json_parameters) + 1,
                                                                         low_cut))
 
             elif step == ProcessTypology.LOW_PASS.value:
@@ -129,7 +132,7 @@ def show_data(click,
 
                 # TODO: add function when it will be available in helper_functions
                 # new_step_emg = hf.emg_lowpass_butter(new_step_emg, low_cut, sample_rate)
-                #json_parameters.append(utils.build_lowpass_params_json(n + 5, high_cut))
+                # json_parameters.append(utils.build_lowpass_params_json(n + 5, high_cut))
 
             elif step == ProcessTypology.ECG_REMOVAL.value:
                 idx = utils.get_idx_dict_list(additional_rem_idx, 'index', card_id)
@@ -141,20 +144,20 @@ def show_data(click,
                 # if the matrix is still bi-dimensional, we use it
 
                 if new_step_emg.ndim == 1:
-                    tmp_matrix = [emg_cut_final[0, :], new_step_emg, new_step_emg]
+                    tmp_matrix = np.array([emg_cut_final[0, :], new_step_emg, new_step_emg])
                 else:
                     tmp_matrix = new_step_emg
 
                 new_step_emg, titles = utils.apply_ecg_removal(ecg_additional_method,
-                                                         tmp_matrix,
-                                                         sample_rate)
-                json_parameters.append(utils.build_ecgfilt_params_json(len(json_parameters)+1,
+                                                               tmp_matrix,
+                                                               sample_rate)
+                json_parameters.append(utils.build_ecgfilt_params_json(len(json_parameters) + 1,
                                                                        EcgRemovalMethods(ecg_additional_method)
                                                                        ))
 
         # At the end, extract the envelope
         emg_env = utils.get_envelope(envelope_method, new_step_emg, sample_rate)
-        json_parameters.append(utils.build_envelope_params_json(len(json_parameters)+1,
+        json_parameters.append(utils.build_envelope_params_json(len(json_parameters) + 1,
                                                                 EnvelopeMethod(envelope_method)
                                                                 ))
 
@@ -164,7 +167,7 @@ def show_data(click,
         children_emg = utils.add_emg_graphs(emg_env, sample_rate, titles)
         # enable the data download
         save_data_enabled = False
-    else: # if no data have been uploaded
+    else:  # if no data have been uploaded
         children_emg = []
         save_data_enabled = True
 
@@ -192,9 +195,11 @@ def collapse_graph(toggle_value):
 @callback(Output('custom-preprocessing-steps', 'children'),
           Input('add-steps-btn', 'n_clicks'),
           Input({"type": "step-close-button", "index": ALL}, "n_clicks"),
+          Input('confirm-upload', 'submit_n_clicks'),
+          State('upload-processing-params', 'contents'),
           State('custom-preprocessing-steps', 'children'),
           prevent_initial_call=False)
-def add_step(click, close, previous_content):
+def add_step(click, close, confirm, params_file, previous_content):
     global card_counter
 
     id_ctx = ctx.triggered_id
@@ -211,13 +216,20 @@ def add_step(click, close, previous_content):
             updated_content = new_card
         else:
             updated_content = previous_content + [new_card, html.P()]
+    # if the param file has been added (after button confirmation)
+    elif id_ctx == 'confirm-upload':
+        if confirm:
+            card_counter = 0
+            updated_content, card_counter = utils.upload_additional_steps(params_file)
+        else: # if the operation is cancelled, do nothing
+            updated_content = previous_content
     # if the remove button is clicked, remove the card
     else:
         remove_idx = id_ctx['index']
         for n, el in enumerate(previous_content):
             if el['type'] == 'Card' and el['props']['id']['index'] == remove_idx:
-                del previous_content[n + 1] # remove the html.P element
-                previous_content.remove(el) # remove the card
+                del previous_content[n + 1]  # remove the html.P element
+                previous_content.remove(el)  # remove the card
 
         updated_content = previous_content
 
@@ -251,9 +263,8 @@ def get_body(selected_value, card_id):
           Input('download-data-btn', 'n_clicks'),
           prevent_initial_call=True)
 def download_data(click):
-
     # build the params file
-    params_file = dict(content=json.dumps(json_parameters), filename='parameters.txt')
+    params_file = dict(content=json.dumps(json_parameters), filename='parameters.json')
 
     # build the csv file with the processed signal
     # to use the dcc.Download element, we need to convert the np array into a dataframe
@@ -272,7 +283,6 @@ def download_data(click):
           State('raw-signals-column', 'width'),
           prevent_initial_call=True)
 def open_column(click, current_width):
-
     if current_width == 1:
         original_width = 4
         processed_width = 6
@@ -285,3 +295,51 @@ def open_column(click, current_width):
         btn_class = "fas fa-angle-left"
 
     return original_width, processed_width, open_card, btn_class
+
+
+# upload json with params
+@callback(Output('confirm-upload', 'displayed'),
+          Output('alert-invalid-file', 'is_open'),
+          Input('upload-processing-params', 'contents'),
+          prevent_initial_call=True)
+def populate_steps(params_file):
+    data = utils.param_file_to_json(params_file)
+    # check if the file is correct
+    if utils.get_idx_dict_list(data, 'file_identifier', FILE_IDENTIFIER) == 0:
+        open_confirmation = True
+        open_alert = False
+    else:
+        open_confirmation = False
+        open_alert = True
+
+    return open_confirmation, open_alert
+
+
+# the user confirms the params upload
+@callback(Output('tail-cut-percent', 'value'),
+          Output('tail-cut-tolerance', 'value'),
+          Output('base-filter-low', 'value'),
+          Output('base-filter-high', 'value'),
+          Output('ecg-filter-select', 'value'),
+          Output('envelope-extraction-select', 'value'),
+          Input('confirm-upload', 'submit_n_clicks'),
+          State('upload-processing-params', 'contents'),
+          prevent_initial_call=True)
+def populate_steps(confirm, params_file):
+
+    if confirm:
+
+        data = utils.param_file_to_json(params_file)
+
+        first_cut_percentage = data[1]['percentage']
+        first_cut_tolerance = data[1]['tolerance']
+        bandpass_low = data[2]['low_frequency']
+        bandpass_high = data[2]['high_frequency']
+
+        ecg_removal = data[4]['method']
+        ecg_removal_value = utils.get_ecg_removal_value(ecg_removal)
+
+        envelope = data[-1]['method']
+        envelope_value = utils.get_envelope_method_value(envelope)
+
+        return first_cut_percentage, first_cut_tolerance, bandpass_low, bandpass_high, ecg_removal_value, envelope_value

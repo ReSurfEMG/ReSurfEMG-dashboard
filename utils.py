@@ -1,7 +1,9 @@
+import base64
 import dash_bootstrap_components as dbc
-import resurfemg.helper_functions as hf
+import json
 import numpy as np
 import plotly.graph_objects as go
+import resurfemg.helper_functions as hf
 import trace_updater
 from app import app
 from dash import dcc, html
@@ -143,8 +145,13 @@ def get_dict(graph_id_dict, relayoutdata):
     return graph_dict_raw.get(graph_id_dict["index"]).construct_update_data(relayoutdata)
 
 
+# function needed to update graphs using plotly_resampler
+def set_dict(uid, figure):
+    graph_dict_raw[uid] = figure
+
+
 # get the layout for the band pass filter card
-def get_band_pass_layout(id_low, id_high):
+def get_band_pass_layout(id_low, id_high, low_value=3, high_value=450):
     layout = [
         dbc.Row([
             dbc.Col([
@@ -153,7 +160,7 @@ def get_band_pass_layout(id_low, id_high):
                     id=id_low,
                     type="number",
                     placeholder="low cut",
-                    value=3
+                    value=low_value
                 )
             ]),
             dbc.Col([
@@ -162,7 +169,7 @@ def get_band_pass_layout(id_low, id_high):
                     id=id_high,
                     type="number",
                     placeholder="high cut",
-                    value=450
+                    value=high_value
                 )
             ])
         ])
@@ -172,7 +179,7 @@ def get_band_pass_layout(id_low, id_high):
 
 
 # get the layout for the high pass filter card
-def get_high_pass_layout(id_low):
+def get_high_pass_layout(id_low, cut_frequency=3):
     layout = [
         dbc.Col([
             html.P("Low cut frequency"),
@@ -180,7 +187,7 @@ def get_high_pass_layout(id_low):
                 id=id_low,
                 type="number",
                 placeholder="low cut",
-                value=3
+                value=cut_frequency
             )
         ])
     ]
@@ -189,7 +196,7 @@ def get_high_pass_layout(id_low):
 
 
 # get the layout for the low pass filter card
-def get_low_pass_layout(id_low):
+def get_low_pass_layout(id_low, cut_frequency=450):
     layout = [
         dbc.Col([
             html.P("High cut frequency"),
@@ -197,7 +204,7 @@ def get_low_pass_layout(id_low):
                 id=id_low,
                 type="number",
                 placeholder="high cut",
-                value=450
+                value=cut_frequency
             )
         ])
     ]
@@ -206,7 +213,7 @@ def get_low_pass_layout(id_low):
 
 
 # get the layout for the ecg removal filter card
-def get_ecg_removal_layout(id_removal):
+def get_ecg_removal_layout(id_removal, value="1"):
     layout = [
         dbc.Label("ECG removal method"),
         dbc.Select(
@@ -216,7 +223,7 @@ def get_ecg_removal_layout(id_removal):
                 {"label": "Gating", "value": EcgRemovalMethods.GATING.value},
                 {"label": "None", "value": EcgRemovalMethods.NONE.value},
             ],
-            value="1"
+            value=value
         )
     ]
 
@@ -224,7 +231,9 @@ def get_ecg_removal_layout(id_removal):
 
 
 # get the layout fot the new processing step card
-def get_new_step_body(index):
+def get_new_step_body(index, selected_value="0", core_body=None):
+    if core_body is None:
+        core_body = []
     new_card = dbc.Card([
         dbc.CardHeader([
             html.Button(
@@ -246,9 +255,9 @@ def get_new_step_body(index):
                 {"label": "Low-pass filter", "value": ProcessTypology.LOW_PASS.value},
                 {"label": "ECG removal", "value": ProcessTypology.ECG_REMOVAL.value},
             ],
-            value="0"
+            value=selected_value
         ),
-        html.Div([], id={"type": "additional-step-core", "index": str(index)})
+        html.Div(core_body, id={"type": "additional-step-core", "index": str(index)})
     ],
         id={"type": "additional-step-card", "index": str(index)})
 
@@ -259,7 +268,7 @@ def get_new_step_body(index):
 # in a list of dicts
 def get_idx_dict_list(dict_list, key, value):
     idx = next((i for i, item in enumerate(dict_list)
-                if item[key] == value), None)
+                if item.__contains__(key) and item[key] == value), None)
 
     return idx
 
@@ -312,7 +321,7 @@ def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
 def build_cutter_params_json(step_number: int, percentage: int, tolerance: int):
     data = {
         'step_number': step_number,
-        'step_type': 'cut',
+        'step_type': ProcessTypology.CUT.name,
         'percentage': percentage,
         'tolerance': tolerance
     }
@@ -324,7 +333,7 @@ def build_cutter_params_json(step_number: int, percentage: int, tolerance: int):
 def build_bandpass_params_json(step_number: int, low_frequency: int, high_frequency: int):
     data = {
         'step_number': step_number,
-        'step_type': 'bandpass',
+        'step_type': ProcessTypology.BAND_PASS.name,
         'low_frequency': low_frequency,
         'high_frequency': high_frequency
     }
@@ -336,7 +345,7 @@ def build_bandpass_params_json(step_number: int, low_frequency: int, high_freque
 def build_highpass_params_json(step_number: int, cut_frequency: int):
     data = {
         'step_number': step_number,
-        'step_type': 'highpass',
+        'step_type': ProcessTypology.HIGH_PASS.name,
         'cut_frequency': cut_frequency
     }
 
@@ -347,7 +356,7 @@ def build_highpass_params_json(step_number: int, cut_frequency: int):
 def build_lowpass_params_json(step_number: int, cut_frequency: int):
     data = {
         'step_number': step_number,
-        'step_type': 'lowpass',
+        'step_type': ProcessTypology.LOW_PASS.name,
         'cut_frequency': cut_frequency
     }
 
@@ -358,7 +367,7 @@ def build_lowpass_params_json(step_number: int, cut_frequency: int):
 def build_ecgfilt_params_json(step_number: int, method: EcgRemovalMethods):
     data = {
         'step_number': step_number,
-        'step_type': 'ecg_removal',
+        'step_type': ProcessTypology.ECG_REMOVAL.name,
         'method': method.name
     }
 
@@ -369,8 +378,71 @@ def build_ecgfilt_params_json(step_number: int, method: EcgRemovalMethods):
 def build_envelope_params_json(step_number: int, method: EnvelopeMethod):
     data = {
         'step_number': step_number,
-        'step_type': 'envelope',
+        'step_type': ProcessTypology.ENVELOPE.name,
         'method': method.name
     }
 
     return data
+
+
+def get_ecg_removal_value(method_name):
+    ecg_removal_value = 0
+
+    for ecg_method in EcgRemovalMethods:
+        if method_name == ecg_method.name:
+            ecg_removal_value = ecg_method.value
+
+    return ecg_removal_value
+
+
+def get_envelope_method_value(method_name):
+    envelope_value = 0
+
+    for envelope_method in EnvelopeMethod:
+        if method_name == envelope_method.name:
+            envelope_value = envelope_method.value
+
+    return envelope_value
+
+
+def param_file_to_json(param_file):
+    content_type, content_string = param_file.split(',')
+    decoded = base64.b64decode(content_string).decode('utf8')
+    data = json.loads(decoded)
+
+    return data
+
+
+def upload_additional_steps(params_file):
+    core_body = []
+    card_counter_local = 0
+
+    data = param_file_to_json(params_file)
+
+    for steps_index in range(5, len(data) - 1):
+        step_type = data[steps_index]['step_type']
+        card_counter_local += 1
+        if step_type == ProcessTypology.BAND_PASS.name:
+            new_card = get_band_pass_layout({"type": "additional-step-low", "index": str(card_counter_local)},
+                                            {"type": "additional-step-high", "index": str(card_counter_local)},
+                                            data[steps_index]['low_frequency'],
+                                            data[steps_index]['high_frequency'])
+            list_value = ProcessTypology.BAND_PASS.value
+        elif step_type == ProcessTypology.HIGH_PASS.name:
+            new_card = get_high_pass_layout({"type": "additional-step-low", "index": str(card_counter_local)},
+                                            data[steps_index]['cut_frequency'])
+            list_value = ProcessTypology.HIGH_PASS.value
+        elif step_type == ProcessTypology.LOW_PASS.name:
+            new_card = get_high_pass_layout({"type": "additional-step-high", "index": str(card_counter_local)},
+                                            data[steps_index]['cut_frequency'])
+            list_value = ProcessTypology.LOW_PASS.value
+        elif step_type == ProcessTypology.ECG_REMOVAL.name:
+            ecg_removal_value = get_ecg_removal_value(data[steps_index]['method'])
+            new_card = get_ecg_removal_layout({"type": "additional-step-removal", "index": str(card_counter_local)},
+                                              data[steps_index]['method'])
+            list_value = ProcessTypology.ECG_REMOVAL.value
+
+        steps_body = get_new_step_body(card_counter_local, list_value, new_card)
+        core_body = core_body + [steps_body, html.P()]
+
+    return core_body, card_counter_local

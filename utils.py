@@ -35,6 +35,7 @@ def add_emg_graphs(emg_data, frequency, titles=None, default_processed=None):
         return []
 
     graphs = []
+    show_legend = False
 
     if emg_data.ndim == 1:
         leads_n = 0
@@ -65,24 +66,44 @@ def add_emg_graphs(emg_data, frequency, titles=None, default_processed=None):
         else:
             fig_title = titles[i]
 
-        fig = FigureResampler(make_subplots(specs=[[{"secondary_y": True}]]))
-        fig.add_trace(go.Scatter(),
-                      hf_x=time_array,
-                      hf_y=y)
-        fig.data[0].name = "Current processing"
+        fig = FigureResampler(
+            make_subplots(
+                specs=[[{"secondary_y": True}]]
+            ),
+            resampled_trace_prefix_suffix=('', ''),
+            show_mean_aggregation_size=False
+        )
 
         if default_processed is not None:
-            fig.add_trace(go.Scatter(),
-                          hf_x=time_array_processed,
-                          hf_y=y_default_process)
-            fig.data[1].name = "Default processing"
+            show_legend = True
+            fig.add_trace(go.Scatter(
+                name="Default processing",
+                line=dict(
+                    color='red',
+                    dash='dot',
+                )
+            ),
+                hf_x=time_array_processed,
+                hf_y=y_default_process,
+            )
+
+        fig.add_trace(go.Scatter(
+            name="Current processing",
+            line=dict(
+                color='blue',
+            )
+        ),
+            hf_x=time_array,
+            hf_y=y,
+            secondary_y=True
+        )
 
         fig.update_layout(
             xaxis_title="Time [s]",
             yaxis_title="micro Volts",
             legend_title="Legend"
         )
-        fig.update_traces(showlegend=True)
+        fig.update_traces(showlegend=show_legend)
 
         graphs.append(
             dbc.Switch(

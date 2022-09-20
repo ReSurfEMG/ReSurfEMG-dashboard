@@ -37,7 +37,7 @@ def add_emg_graphs(emg_data, frequency, titles=None, default_processed=None):
     graphs = []
 
     if emg_data.ndim == 1:
-        leads_n = 1
+        leads_n = 0
         time_array = get_time_array(emg_data.shape[0], frequency)
         if default_processed is not None:
             time_array_processed = get_time_array(default_processed.shape[0], frequency)
@@ -51,7 +51,7 @@ def add_emg_graphs(emg_data, frequency, titles=None, default_processed=None):
 
         uid = 'emg' + str(i) + '-graph' + str(uuid4())
 
-        if leads_n == 1:
+        if leads_n == 0:
             y = emg_data
             if default_processed is not None:
                 y_default_process = default_processed
@@ -66,22 +66,23 @@ def add_emg_graphs(emg_data, frequency, titles=None, default_processed=None):
             fig_title = titles[i]
 
         fig = FigureResampler(make_subplots(specs=[[{"secondary_y": True}]]))
-        fig.add_trace(go.Scatter(name="Current processing"),
+        fig.add_trace(go.Scatter(),
                       hf_x=time_array,
                       hf_y=y)
+        fig.data[0].name = "Current processing"
+
         if default_processed is not None:
-            fig.add_trace(go.Scatter(name="Default processing"),
+            fig.add_trace(go.Scatter(),
                           hf_x=time_array_processed,
-                          hf_y=y_default_process,
-                          row=1,
-                          col=1,
-                          secondary_y=True)
+                          hf_y=y_default_process)
+            fig.data[1].name = "Default processing"
 
         fig.update_layout(
             xaxis_title="Time [s]",
             yaxis_title="micro Volts",
-            legend_title="Legend Title"
+            legend_title="Legend"
         )
+        fig.update_traces(showlegend=True)
 
         graphs.append(
             dbc.Switch(
@@ -314,7 +315,7 @@ def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
 
     if removal_method == EcgRemovalMethods.ICA.value:
         ecg_lead = emg_signal[0]
-
+        titles.append("Filtered Track 0")
         for lead in range(1, emg_signal.shape[0]):
             emg_ica = mlt.compute_ICA_two_comp_selective(emg_signal, False, (0, lead))
             emg_clean = hf.pick_lowest_correlation_array(emg_ica, ecg_lead)
@@ -322,6 +323,7 @@ def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
             titles.append("Filtered Track " + str(lead))
 
         emg_ecg = np.array(emg_ecg)
+        emg_ecg = np.insert(emg_ecg, 0, ecg_lead, 0)
 
     elif removal_method == EcgRemovalMethods.GATING.value:
         # TODO: change with QRS identification when available in library
@@ -330,13 +332,14 @@ def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
         ecg_rms = hf.full_rolling_rms(emg_signal[0, :], 10)
         peak_height = peak_fraction * (max(ecg_rms) - min(ecg_rms))
         ecg_peaks, _ = find_peaks(ecg_rms, height=peak_height, width=peak_width * sample_rate)
-
+        titles.append("Filtered Track 0")
         for lead in range(1, emg_signal.shape[0]):
             emg_clean = hf.gating(emg_signal[lead, :], ecg_peaks, method=0)
             emg_ecg.append(emg_clean)
             titles.append("Filtered Track " + str(lead))
 
         emg_ecg = np.array(emg_ecg)
+        emg_ecg = np.insert(emg_ecg, 0, emg_signal[0], 0)
 
     else:
         emg_ecg = emg_signal

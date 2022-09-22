@@ -78,10 +78,10 @@ def add_emg_graphs(emg_data, frequency, titles=None, default_processed=None):
             show_legend = True
             fig.add_trace(go.Scatter(
                 name="Default processing",
+                opacity=0.7,
                 line=dict(
                     color='red',
-                    dash='dot',
-                    alpha = 0.9
+                    #dash='dot',
                 )
             ),
                 hf_x=time_array_processed,
@@ -90,9 +90,9 @@ def add_emg_graphs(emg_data, frequency, titles=None, default_processed=None):
 
         fig.add_trace(go.Scatter(
             name="Current processing",
+            opacity=0.5,
             line=dict(
                 color='blue',
-                alpha = 0.9,
             )
         ),
             hf_x=time_array,

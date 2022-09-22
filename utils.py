@@ -81,6 +81,7 @@ def add_emg_graphs(emg_data, frequency, titles=None, default_processed=None):
                 line=dict(
                     color='red',
                     dash='dot',
+                    alpha = 0.9
                 )
             ),
                 hf_x=time_array_processed,
@@ -91,6 +92,7 @@ def add_emg_graphs(emg_data, frequency, titles=None, default_processed=None):
             name="Current processing",
             line=dict(
                 color='blue',
+                alpha = 0.9,
             )
         ),
             hf_x=time_array,

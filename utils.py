@@ -136,34 +136,77 @@ def add_emg_graphs(emg_data, frequency, titles=None, default_processed=None):
 
 
 # build the layout for ventilator graphs
-def add_ventilator_graphs(vent_data, frequency):
-    if vent_data is None:
+def add_ventilator_graphs(emg_data, frequency, titles=None):
+    if emg_data is None:
         return []
 
     graphs = []
+    show_legend = False
 
-    for i in range(vent_data.shape[0]):
-        uid = 'vent' + str(i) + '-graph'
+    if emg_data.ndim == 1:
+        leads_n = 0
+        time_array = get_time_array(emg_data.shape[0], frequency)
+    else:
+        leads_n = emg_data.shape[0]
+        time_array = get_time_array(emg_data.shape[1], frequency)
 
-        length = vent_data.shape[vent_data.ndim - 1]
+    for i in range(leads_n):
 
-        time_array = get_time_array(length, frequency)
+        uid = 'vent' + str(i) + '-graph' + str(uuid4())
 
-        fig = FigureResampler(go.Figure())
-        fig.add_trace(go.Scatter(),
-                      hf_x=time_array,
-                      hf_y=vent_data[i])
+        if leads_n == 0:
+            y = emg_data
+        else:
+            y = emg_data[i]
 
-        fig.update_layout(
-            title="Ventilator Track " + str(i),
-            xaxis_title="Time [s]",
-            legend_title="Legend Title"
+        if titles is None:
+            fig_title = "Ventilator Track " + str(i)
+        else:
+            fig_title = titles[i]
+
+        fig = FigureResampler(
+            make_subplots(
+                specs=[[{"secondary_y": True}]]
+            ),
+            resampled_trace_prefix_suffix=('', ''),
+            show_mean_aggregation_size=False
         )
 
-        graphs.append(dcc.Graph(
-            id={"type": "dynamic-graph", "index": uid},
-            figure=fig
-        ))
+        fig.add_trace(go.Scatter(
+            name="Ventilator data",
+            opacity=0.5,
+            line=dict(
+                color='blue',
+            )
+        ),
+            hf_x=time_array,
+            hf_y=y,
+        )
+
+        fig.update_layout(
+            xaxis_title="Time [s]",
+            legend_title="Legend"
+        )
+        fig.update_traces(showlegend=show_legend)
+
+        graphs.append(
+            dbc.Switch(
+                id={"type": "emg-graph-switch", "index": uid},
+                label=fig_title,
+                value=True
+            ),
+        )
+        graphs.append(
+            dbc.Collapse([
+                dcc.Graph(
+                    id={"type": "dynamic-graph", "index": uid},
+                    figure=fig
+                )
+            ],
+                id={"type": "emg-graph-collapse", "index": uid},
+                is_open=True
+            )
+        )
 
         graphs.append(trace_updater.TraceUpdater(
             id={"type": "dynamic-updater", "index": uid},
@@ -354,10 +397,14 @@ def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
         peak_fraction = 0.40
         ecg_rms = hf.full_rolling_rms(emg_signal[0, :], 10)
         peak_height = peak_fraction * (max(ecg_rms) - min(ecg_rms))
-        ecg_peaks, _ = find_peaks(ecg_rms, height=peak_height, width=peak_width * sample_rate)
+        ecg_peaks, _ = find_peaks(ecg_rms,
+                                  height=peak_height,
+                                  width=peak_width * sample_rate,
+                                  distance=int(sample_rate/3))
+
         titles.append("Filtered Track 0")
         for lead in range(1, emg_signal.shape[0]):
-            emg_clean = hf.gating(emg_signal[lead, :], ecg_peaks, method=0)
+            emg_clean = hf.gating(emg_signal[lead, :], ecg_peaks)
             emg_ecg.append(emg_clean)
             titles.append("Filtered Track " + str(lead))
 

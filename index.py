@@ -60,7 +60,7 @@ header = dbc.Row([
 
 nav = dbc.Row(
         [
-            dbc.Col(dbc.NavLink("Load data", href="/",
+            dbc.Col(dbc.NavLink("Upload data", href="/",
                                 style={'font-size': '25px'})),
             dbc.Col(dbc.NavLink("View raw data", href="/view-raw",
                                 style={'font-size': '25px'})),

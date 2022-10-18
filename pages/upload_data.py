@@ -15,7 +15,7 @@ def layout():
             dbc.Col([html.Div([
                 du.Upload(
                     id='upload-emg-data',
-                    text='Drag and Drop Here to upload EMG data!',
+                    text='Click or Drag and Drop Here to upload EMG data!',
                     text_completed='Uploaded: ',
                     filetypes=['Poly5'],
                 ),
@@ -43,7 +43,7 @@ def layout():
             dbc.Col([html.Div([
                 du.Upload(
                     id='upload-ventilator-data',
-                    text='Drag and Drop Here to upload Ventilator data!',
+                    text='Click or Drag and Drop Here to upload Ventilator data!',
                     text_completed='Uploaded: ',
                     filetypes=['Poly5'],
                 ),
@@ -63,7 +63,7 @@ def layout():
             ], width=2),
 
             dbc.Col([
-                html.Div('EMG sampling frequency', style={'textAlign': 'left'})
+                html.Div('Ventilator sampling frequency', style={'textAlign': 'left'})
             ], width=2),
         ]),
 

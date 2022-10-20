@@ -38,7 +38,7 @@ def show_raw_data(data):
           State('tail-cut-tolerance', 'value'),
           State('base-filter-low', 'value'),
           State('base-filter-high', 'value'),
-          State('ecg-filter-select', 'value'),
+          State({"type": "ecg-filter-select", "index": "0"}, "value"),
           State('envelope-extraction-select', 'value'),
           State({"type": "additional-step-core", "index": ALL}, "id"),
           State({"type": "additional-step-type", "index": ALL}, "value"),
@@ -46,8 +46,10 @@ def show_raw_data(data):
           State({"type": "additional-step-low", "index": ALL}, "id"),
           State({"type": "additional-step-high", "index": ALL}, "value"),
           State({"type": "additional-step-high", "index": ALL}, "id"),
-          State({"type": "additional-step-removal", "index": ALL}, "value"),
-          State({"type": "additional-step-removal", "index": ALL}, "id"))
+          State({"type": "ecg-filter-select", "index": ALL}, "value"),
+          State({"type": "ecg-filter-select", "index": ALL}, "id"),
+          State({"type": "gating-method-type", "index": ALL}, "value"),
+          State({"type": "gating-method-type", "index": ALL}, "id"))
 def show_data(click,
               cut_percent,
               cut_tolerance,
@@ -62,7 +64,9 @@ def show_data(click,
               additional_high,
               additional_high_idx,
               additional_rem,
-              additional_rem_idx):
+              additional_rem_idx,
+              gating_method,
+              gating_method_idx):
     # variables initialization
     global json_parameters
 
@@ -93,7 +97,12 @@ def show_data(click,
         json_parameters.append(utils.build_cutter_params_json(3, 3, 5))
 
         # remove ECG
-        emg_ecg, titles = utils.apply_ecg_removal(ecg_method, emg_cut_final, sample_rate)
+        if ecg_method == EcgRemovalMethods.GATING.value:
+            gating_method_default_idx = utils.get_idx_dict_list(gating_method_idx, 'index', '0')
+            gating_method_default = int(gating_method[gating_method_default_idx])
+        else:
+            gating_method_default = None
+        emg_ecg, titles = utils.apply_ecg_removal(ecg_method, emg_cut_final, sample_rate, gating_method_default)
         json_parameters.append(utils.build_ecgfilt_params_json(4, EcgRemovalMethods(ecg_method)))
 
         new_step_emg = emg_ecg
@@ -138,6 +147,10 @@ def show_data(click,
                 idx = utils.get_idx_dict_list(additional_rem_idx, 'index', card_id)
 
                 ecg_additional_method = additional_rem[idx]
+                if ecg_additional_method == EcgRemovalMethods.GATING.value:
+                    gating_method_type = int(gating_method[idx])
+                else:
+                    gating_method_type = None
 
                 # at the moment we need to create a matrix with 3 leads to use the methods
                 # the lead 0 is the  ecg lead, the other two are the same processed signal
@@ -150,7 +163,8 @@ def show_data(click,
 
                 new_step_emg, titles = utils.apply_ecg_removal(ecg_additional_method,
                                                                tmp_matrix,
-                                                               sample_rate)
+                                                               sample_rate,
+                                                               gating_method_type)
                 json_parameters.append(utils.build_ecgfilt_params_json(len(json_parameters) + 1,
                                                                        EcgRemovalMethods(ecg_additional_method)
                                                                        ))
@@ -266,7 +280,7 @@ def get_body(selected_value, card_id):
     elif selected_value == ProcessTypology.LOW_PASS.value:
         new_section = utils.get_low_pass_layout({"type": "additional-step-high", "index": card_id['index']})
     elif selected_value == ProcessTypology.ECG_REMOVAL.value:
-        new_section = utils.get_ecg_removal_layout({"type": "additional-step-removal", "index": card_id['index']})
+        new_section = utils.get_ecg_removal_layout({"type": "ecg-filter-select", "index": card_id['index']})
 
     return new_section
 
@@ -357,3 +371,21 @@ def populate_steps(confirm, params_file):
         envelope_value = utils.get_envelope_method_value(envelope)
 
         return first_cut_percentage, first_cut_tolerance, bandpass_low, bandpass_high, ecg_removal_value, envelope_value
+
+
+# populate the options on the base of the selected processing type
+@callback(Output({"type": "ecg-removal-card", "index": MATCH}, "children"),
+          Input({"type": "ecg-filter-select", "index": MATCH}, "value"),
+          State({"type": "ecg-removal-card", "index": MATCH}, "children"),
+          State({"type": "ecg-removal-card", "index": MATCH}, "id"),
+          prevent_initial_call=True)
+def get_body(selected_value, container, id_origin):
+    if selected_value == EcgRemovalMethods.GATING.value:
+        new_section = container + utils.add_gating_method_options(id_origin["index"])
+    else:
+        for element in container:
+            if 'id' in element['props'] and element['props']['id']['type']=='gating-method-div':
+                container.remove(element)
+        new_section = container
+    return new_section
+

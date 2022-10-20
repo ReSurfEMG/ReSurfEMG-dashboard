@@ -6,7 +6,6 @@ import plotly.graph_objects as go
 import resurfemg.helper_functions as hf
 import resurfemg.multi_lead_type as mlt
 import trace_updater
-from app import app
 from dash import dcc, html
 from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod
 from plotly_resampler import FigureResampler
@@ -81,7 +80,7 @@ def add_emg_graphs(emg_data, frequency, titles=None, default_processed=None):
                 opacity=0.7,
                 line=dict(
                     color='red',
-                    #dash='dot',
+                    # dash='dot',
                 )
             ),
                 hf_x=time_array_processed,
@@ -298,18 +297,23 @@ def get_low_pass_layout(id_low, cut_frequency=450):
 
 # get the layout for the ecg removal filter card
 def get_ecg_removal_layout(id_removal, value="1"):
-    layout = [
-        dbc.Label("ECG removal method"),
-        dbc.Select(
-            id=id_removal,
-            options=[
-                {"label": "ICA", "value": EcgRemovalMethods.ICA.value},
-                {"label": "Gating", "value": EcgRemovalMethods.GATING.value},
-                {"label": "None", "value": EcgRemovalMethods.NONE.value},
-            ],
-            value=value
-        )
-    ]
+    if 'index' in id_removal:
+        id_removal_index = id_removal['index']
+    else:
+        id_removal_index = "0"
+
+    layout = html.Div([dbc.Label("ECG removal method"),
+                       dbc.Select(
+                           id=id_removal,
+                           options=[
+                               {"label": "ICA", "value": EcgRemovalMethods.ICA.value},
+                               {"label": "Gating", "value": EcgRemovalMethods.GATING.value},
+                               {"label": "None", "value": EcgRemovalMethods.NONE.value},
+                           ],
+                           value=value
+                       )],
+                      id={"type": "ecg-removal-card", "index": id_removal_index}
+                      )
 
     return layout
 
@@ -348,6 +352,26 @@ def get_new_step_body(index, selected_value="0", core_body=None):
     return new_card
 
 
+def add_gating_method_options(index):
+    layout = [
+        html.Div([
+            dbc.Label("Gating method"),
+            dbc.Select(
+                id={"type": "gating-method-type", "index": str(index)},
+                options=[
+                    {"label": "Method 0", "value": "0"},
+                    {"label": "Method 1", "value": "1"},
+                    {"label": "Method 2", "value": "2"},
+                    {"label": "Method 3", "value": "3"},
+                ],
+                value="3"
+            )
+        ],
+            id={"type": "gating-method-div", "index": str(index)})
+    ]
+    return layout
+
+
 # get the index of the dict containing the key-value
 # in a list of dicts
 def get_idx_dict_list(dict_list, key, value):
@@ -375,7 +399,7 @@ def get_envelope(envelope_method: int, emg_signal, sample_rate):
 
 
 # apply the ecg removal, using the method selected
-def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
+def apply_ecg_removal(removal_method: int, emg_signal, sample_rate, gating_method: int = 3):
     emg_ecg = []
     titles = []
 
@@ -400,11 +424,11 @@ def apply_ecg_removal(removal_method: int, emg_signal, sample_rate):
         ecg_peaks, _ = find_peaks(ecg_rms,
                                   height=peak_height,
                                   width=peak_width * sample_rate,
-                                  distance=int(sample_rate/3))
+                                  distance=int(sample_rate / 3))
 
         titles.append("Filtered Track 0")
         for lead in range(1, emg_signal.shape[0]):
-            emg_clean = hf.gating(emg_signal[lead, :], ecg_peaks)
+            emg_clean = hf.gating(emg_signal[lead, :], ecg_peaks, method=gating_method)
             emg_ecg.append(emg_clean)
             titles.append("Filtered Track " + str(lead))
 

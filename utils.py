@@ -359,10 +359,10 @@ def add_gating_method_options(index):
             dbc.Select(
                 id={"type": "gating-method-type", "index": str(index)},
                 options=[
-                    {"label": "Method 0", "value": "0"},
-                    {"label": "Method 1", "value": "1"},
-                    {"label": "Method 2", "value": "2"},
-                    {"label": "Method 3", "value": "3"},
+                    {"label": "Zero Fill", "value": "0"},
+                    {"label": "Interpolate", "value": "1"},
+                    {"label": "Avg. Prior Segment", "value": "2"},
+                    {"label": "Running Avg. RMS", "value": "3"},
                 ],
                 value="3"
             )

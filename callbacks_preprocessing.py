@@ -5,7 +5,7 @@ import pandas as pd
 import utils
 from app import variables
 from dash import Input, Output, State, callback, MATCH, ALL, html, ctx, dcc
-from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod, FILE_IDENTIFIER
+from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod, FILE_IDENTIFIER, GatingMethod
 from resurfemg import helper_functions as hf
 
 
@@ -100,10 +100,14 @@ def show_data(click,
         if ecg_method == EcgRemovalMethods.GATING.value:
             gating_method_default_idx = utils.get_idx_dict_list(gating_method_idx, 'index', '0')
             gating_method_default = int(gating_method[gating_method_default_idx])
+            json_parameters.append(utils.build_ecgfilt_params_json(4,
+                                                                   EcgRemovalMethods(ecg_method),
+                                                                   GatingMethod(gating_method[gating_method_default_idx])))
         else:
             gating_method_default = None
+            json_parameters.append(utils.build_ecgfilt_params_json(4, EcgRemovalMethods(ecg_method)))
+
         emg_ecg, titles = utils.apply_ecg_removal(ecg_method, emg_cut_final, sample_rate, gating_method_default)
-        json_parameters.append(utils.build_ecgfilt_params_json(4, EcgRemovalMethods(ecg_method)))
 
         new_step_emg = emg_ecg
 
@@ -149,8 +153,15 @@ def show_data(click,
                 ecg_additional_method = additional_rem[idx]
                 if ecg_additional_method == EcgRemovalMethods.GATING.value:
                     gating_method_type = int(gating_method[idx])
+                    json_parameters.append(utils.build_ecgfilt_params_json(len(json_parameters) + 1,
+                                                                           EcgRemovalMethods(ecg_additional_method),
+                                                                           GatingMethod(gating_method[idx])
+                                                                           ))
                 else:
                     gating_method_type = None
+                    json_parameters.append(utils.build_ecgfilt_params_json(len(json_parameters) + 1,
+                                                                           EcgRemovalMethods(ecg_additional_method)
+                                                                           ))
 
                 # at the moment we need to create a matrix with 3 leads to use the methods
                 # the lead 0 is the  ecg lead, the other two are the same processed signal
@@ -165,9 +176,7 @@ def show_data(click,
                                                                tmp_matrix,
                                                                sample_rate,
                                                                gating_method_type)
-                json_parameters.append(utils.build_ecgfilt_params_json(len(json_parameters) + 1,
-                                                                       EcgRemovalMethods(ecg_additional_method)
-                                                                       ))
+
 
         # At the end, extract the envelope
         emg_env = utils.get_envelope(envelope_method, new_step_emg, sample_rate)
@@ -384,7 +393,7 @@ def get_body(selected_value, container, id_origin):
         new_section = container + utils.add_gating_method_options(id_origin["index"])
     else:
         for element in container:
-            if 'id' in element['props'] and element['props']['id']['type']=='gating-method-div':
+            if 'id' in element['props'] and element['props']['id']['type'] == 'gating-method-div':
                 container.remove(element)
         new_section = container
     return new_section

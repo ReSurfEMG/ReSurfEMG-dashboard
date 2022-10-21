@@ -7,7 +7,7 @@ import resurfemg.helper_functions as hf
 import resurfemg.multi_lead_type as mlt
 import trace_updater
 from dash import dcc, html
-from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod
+from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod, GatingMethod
 from plotly_resampler import FigureResampler
 from plotly.subplots import make_subplots
 from scipy.signal import find_peaks
@@ -359,10 +359,10 @@ def add_gating_method_options(index):
             dbc.Select(
                 id={"type": "gating-method-type", "index": str(index)},
                 options=[
-                    {"label": "Zero Fill", "value": "0"},
-                    {"label": "Interpolate", "value": "1"},
-                    {"label": "Avg. Prior Segment", "value": "2"},
-                    {"label": "Running Avg. RMS", "value": "3"},
+                    {"label": "Zero Fill", "value": GatingMethod.ZERO_FILL.value},
+                    {"label": "Interpolate", "value": GatingMethod.INTERPOLATE.value},
+                    {"label": "Avg. Prior Segment", "value": GatingMethod.AVERAGE_PRIOR_SEGMENT.value},
+                    {"label": "Running Avg. RMS", "value": GatingMethod.RUNNING_AVERAGE_RMS.value},
                 ],
                 value="3"
             )
@@ -489,12 +489,15 @@ def build_lowpass_params_json(step_number: int, cut_frequency: int):
 
 
 # build the json containing the params for the ecg removal
-def build_ecgfilt_params_json(step_number: int, method: EcgRemovalMethods):
+def build_ecgfilt_params_json(step_number: int, method: EcgRemovalMethods, gating_method: GatingMethod = None):
     data = {
         'step_number': step_number,
         'step_type': ProcessTypology.ECG_REMOVAL.name,
         'method': method.name
     }
+
+    if gating_method is not None:
+        data['gating_method'] = gating_method.name
 
     return data
 

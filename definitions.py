@@ -23,3 +23,10 @@ class EnvelopeMethod(Enum):
     RMS = '1'
     FILTERING = '2'
     NONE = '3'
+
+
+class GatingMethod(Enum):
+    ZERO_FILL = '0'
+    INTERPOLATE = '1'
+    AVERAGE_PRIOR_SEGMENT = '2'
+    RUNNING_AVERAGE_RMS = '3'

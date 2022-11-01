@@ -1,4 +1,5 @@
 import dash
+import definitions
 import json
 import numpy as np
 import pandas as pd
@@ -381,12 +382,12 @@ def populate_steps(confirm_upload, confirm_reset, params_file):
     trigger_id = ctx.triggered_id
 
     if trigger_id == 'confirm-reset' and confirm_reset:
-        bandpass_low = 3
-        bandpass_high = 450
-        first_cut_percentage = 3
-        first_cut_tolerance = 5
-        ecg_removal_value = "1"
-        envelope_value = "1"
+        bandpass_low = definitions.default_bandpass_low
+        bandpass_high = definitions.default_bandpass_high
+        first_cut_percentage = definitions.default_first_cut_percentage
+        first_cut_tolerance = definitions.default_first_cut_tolerance
+        ecg_removal_value = definitions.default_ecg_removal_value
+        envelope_value = definitions.default_envelope_value
 
     if trigger_id == 'confirm-upload' and confirm_upload:
 

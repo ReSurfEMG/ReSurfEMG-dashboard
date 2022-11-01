@@ -356,6 +356,16 @@ def populate_steps(params_file):
     return open_confirmation, open_alert
 
 
+# reset params
+@callback(Output('confirm-reset', 'displayed'),
+          Input('restore-default-btn', 'n_clicks'),
+          prevent_initial_call=True)
+def populate_steps(reset_button):
+    open_confirmation = True
+
+    return open_confirmation
+
+
 # the user confirms the params upload or the reset button is pressed
 @callback(Output('tail-cut-percent', 'value'),
           Output('tail-cut-tolerance', 'value'),
@@ -364,28 +374,21 @@ def populate_steps(params_file):
           Output({"type": "ecg-filter-select", "index": "0"}, 'value'),
           Output('envelope-extraction-select', 'value'),
           Input('confirm-upload', 'submit_n_clicks'),
-          Input('restore-default-btn', 'n_clicks'),
+          Input('confirm-reset', 'submit_n_clicks'),
           State('upload-processing-params', 'contents'),
           prevent_initial_call=True)
-def populate_steps(confirm, reset_button, params_file):
+def populate_steps(confirm_upload, confirm_reset, params_file):
     trigger_id = ctx.triggered_id
 
-    if trigger_id == 'restore-default-btn':
-        default_base_filter_low = 3
-        default_base_filter_high = 450
-        default_tailcut_percent = 3
-        default_tailcut_tolerance = 5
-        default_ecg_filter_select = "1"
-        default_envelope_extraction_select = "1"
+    if trigger_id == 'confirm-reset' and confirm_reset:
+        bandpass_low = 3
+        bandpass_high = 450
+        first_cut_percentage = 3
+        first_cut_tolerance = 5
+        ecg_removal_value = "1"
+        envelope_value = "1"
 
-        return default_tailcut_percent, \
-               default_tailcut_tolerance,\
-               default_base_filter_low, \
-               default_base_filter_high,\
-               default_ecg_filter_select, \
-               default_envelope_extraction_select,
-
-    if confirm:
+    if trigger_id == 'confirm-upload' and confirm_upload:
 
         data = utils.param_file_to_json(params_file)
 
@@ -400,6 +403,7 @@ def populate_steps(confirm, reset_button, params_file):
         envelope = data[-1]['method']
         envelope_value = utils.get_envelope_method_value(envelope)
 
+    if confirm_reset or confirm_upload:
         return first_cut_percentage, first_cut_tolerance, bandpass_low, bandpass_high, ecg_removal_value, envelope_value
 
 

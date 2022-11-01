@@ -1,10 +1,9 @@
 import dash
 import dash_bootstrap_components as dbc
-import dash_uploader as du
 from dash import html, dcc
 
 import utils
-from definitions import EcgRemovalMethods, EnvelopeMethod
+from definitions import EnvelopeMethod
 
 dash.register_page(__name__, path='/preprocessing')
 
@@ -253,5 +252,9 @@ layout = html.Div([
     dcc.ConfirmDialog(
         id='confirm-upload',
         message='Uploading the parameters will overwrite the current settings. Are you sure you want to continue?',
+    ),
+    dcc.ConfirmDialog(
+        id='confirm-reset',
+        message='Resetting the parameters will overwrite the current settings. Are you sure you want to continue?',
     ),
 ])

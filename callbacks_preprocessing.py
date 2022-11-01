@@ -234,11 +234,11 @@ def collapse_graph(toggle_value):
           Input('add-steps-btn', 'n_clicks'),
           Input({"type": "step-close-button", "index": ALL}, "n_clicks"),
           Input('confirm-upload', 'submit_n_clicks'),
-          Input('restore-default-btn', 'n_clicks'),
+          Input('confirm-reset', 'submit_n_clicks'),
           State('upload-processing-params', 'contents'),
           State('custom-preprocessing-steps', 'children'),
           prevent_initial_call=False)
-def add_step(click, close, confirm, reset_button, params_file, previous_content):
+def add_step(click, close, confirm_upload, confirm_reset, params_file, previous_content):
     global card_counter
 
     id_ctx = ctx.triggered_id
@@ -257,14 +257,17 @@ def add_step(click, close, confirm, reset_button, params_file, previous_content)
             updated_content = previous_content + [new_card, html.P()]
     # if the param file has been added (after button confirmation)
     elif id_ctx == 'confirm-upload':
-        if confirm:
+        if confirm_upload:
             card_counter = 0
             updated_content, card_counter = utils.upload_additional_steps(params_file)
         else: # if the operation is cancelled, do nothing
             updated_content = previous_content
     # if the restore params button has been clicked
-    elif id_ctx == 'restore-default-btn':
-        updated_content = []
+    elif id_ctx == 'confirm-reset':
+        if confirm_reset:
+            updated_content = []
+        else:  # if the operation is cancelled, do nothing
+            updated_content = previous_content
     # if the remove button is clicked, remove the card
     else:
         remove_idx = id_ctx['index']

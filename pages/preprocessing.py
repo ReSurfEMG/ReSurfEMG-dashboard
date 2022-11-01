@@ -1,5 +1,6 @@
 import dash
 import dash_bootstrap_components as dbc
+import definitions
 from dash import html, dcc
 
 import utils
@@ -17,7 +18,7 @@ tailcut_card = dbc.Card([
                     id='tail-cut-percent',
                     type="number",
                     placeholder="%",
-                    value=3
+                    value=definitions.default_first_cut_percentage
                 )
             ]),
             dbc.Col([
@@ -26,7 +27,7 @@ tailcut_card = dbc.Card([
                     id='tail-cut-tolerance',
                     type="number",
                     placeholder="%",
-                    value=5
+                    value=definitions.default_first_cut_tolerance
                 )
             ])
         ])
@@ -43,7 +44,7 @@ baseline_card = dbc.Card([
                     id='base-filter-low',
                     type="number",
                     placeholder="low cut",
-                    value=3
+                    value=definitions.default_bandpass_low
                 )
             ]),
             dbc.Col([
@@ -52,7 +53,7 @@ baseline_card = dbc.Card([
                     id='base-filter-high',
                     type="number",
                     placeholder="high cut",
-                    value=450
+                    value=definitions.default_bandpass_high
                 )
             ])
         ])
@@ -75,7 +76,7 @@ envelope_card = dbc.Card([
             {"label": "Filtering", "value": EnvelopeMethod.FILTERING},
             {"label": "None", "value": EnvelopeMethod.NONE},
         ],
-        value="1"
+        value=definitions.default_envelope_value
     )
 ])
 

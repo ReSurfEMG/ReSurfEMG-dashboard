@@ -1,5 +1,6 @@
 import base64
 import dash_bootstrap_components as dbc
+import definitions
 import json
 import numpy as np
 import plotly.graph_objects as go
@@ -296,7 +297,7 @@ def get_low_pass_layout(id_low, cut_frequency=450):
 
 
 # get the layout for the ecg removal filter card
-def get_ecg_removal_layout(id_removal, value="1"):
+def get_ecg_removal_layout(id_removal, value=definitions.default_ecg_removal_value):
     if 'index' in id_removal:
         id_removal_index = id_removal['index']
     else:

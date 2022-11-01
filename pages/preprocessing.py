@@ -63,16 +63,6 @@ baseline_card = dbc.Card([
 ecg_card = dbc.Card([
     dbc.CardHeader("ECG removal"),
     utils.get_ecg_removal_layout({"type": "ecg-filter-select", "index": "0"})
-    # dbc.Label("ECG removal method"),
-    # dbc.Select(
-    #     id={"type": "ecg-filter-select", "index": "default"},
-    #     options=[
-    #         {"label": "ICA", "value": EcgRemovalMethods.ICA},
-    #         {"label": "Gating", "value": EcgRemovalMethods.GATING},
-    #         {"label": "None", "value": EcgRemovalMethods.NONE},
-    #     ],
-    #     value="1"
-    # )
 ],
     id={"type": "ecg-removal-type", "index": "0"})
 
@@ -158,6 +148,25 @@ layout = html.Div([
                             style={'text-align': 'center'}),
                         html.Div("Upload the parameters file",
                                  style={'text-align': 'center'}),
+                        html.P(),
+                        dbc.Row([
+                            html.Button(
+                                className="fas fa-undo",
+                                id='restore-default-btn',
+                                style={'color': 'black',
+                                       'background': 'transparent',
+                                       'border': 'none',
+                                       'font-size': '34px'},
+                            ),
+                            dbc.Tooltip(
+                                "Restore default pipeline",
+                                id="tooltip-restore-pipeline",
+                                target="restore-default-btn",
+                            )
+                        ],
+                            style={'text-align': 'center'}),
+                        html.Div("Restore default pipeline",
+                                 style={'text-align': 'center'}),
 
                         tailcut_card,
                         html.P(),
@@ -166,7 +175,6 @@ layout = html.Div([
                         ecg_card,
                         html.P(),
                         html.Div([], id='custom-preprocessing-steps'),
-                        html.Div([], id='test-preprocessing-steps'),
 
                         html.Div([
                             html.Button(

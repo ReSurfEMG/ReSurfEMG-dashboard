@@ -233,10 +233,11 @@ def collapse_graph(toggle_value):
           Input('add-steps-btn', 'n_clicks'),
           Input({"type": "step-close-button", "index": ALL}, "n_clicks"),
           Input('confirm-upload', 'submit_n_clicks'),
+          Input('restore-default-btn', 'n_clicks'),
           State('upload-processing-params', 'contents'),
           State('custom-preprocessing-steps', 'children'),
           prevent_initial_call=False)
-def add_step(click, close, confirm, params_file, previous_content):
+def add_step(click, close, confirm, reset_button, params_file, previous_content):
     global card_counter
 
     id_ctx = ctx.triggered_id
@@ -260,6 +261,9 @@ def add_step(click, close, confirm, params_file, previous_content):
             updated_content, card_counter = utils.upload_additional_steps(params_file)
         else: # if the operation is cancelled, do nothing
             updated_content = previous_content
+    # if the restore params button has been clicked
+    elif id_ctx == 'restore-default-btn':
+        updated_content = []
     # if the remove button is clicked, remove the card
     else:
         remove_idx = id_ctx['index']
@@ -352,17 +356,34 @@ def populate_steps(params_file):
     return open_confirmation, open_alert
 
 
-# the user confirms the params upload
+# the user confirms the params upload or the reset button is pressed
 @callback(Output('tail-cut-percent', 'value'),
           Output('tail-cut-tolerance', 'value'),
           Output('base-filter-low', 'value'),
           Output('base-filter-high', 'value'),
-          Output('ecg-filter-select', 'value'),
+          Output({"type": "ecg-filter-select", "index": "0"}, 'value'),
           Output('envelope-extraction-select', 'value'),
           Input('confirm-upload', 'submit_n_clicks'),
+          Input('restore-default-btn', 'n_clicks'),
           State('upload-processing-params', 'contents'),
           prevent_initial_call=True)
-def populate_steps(confirm, params_file):
+def populate_steps(confirm, reset_button, params_file):
+    trigger_id = ctx.triggered_id
+
+    if trigger_id == 'restore-default-btn':
+        default_base_filter_low = 3
+        default_base_filter_high = 450
+        default_tailcut_percent = 3
+        default_tailcut_tolerance = 5
+        default_ecg_filter_select = "1"
+        default_envelope_extraction_select = "1"
+
+        return default_tailcut_percent, \
+               default_tailcut_tolerance,\
+               default_base_filter_low, \
+               default_base_filter_high,\
+               default_ecg_filter_select, \
+               default_envelope_extraction_select,
 
     if confirm:
 

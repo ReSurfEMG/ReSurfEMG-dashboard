@@ -7,43 +7,120 @@ from dash import html, dcc
 dash.register_page(__name__, path='/ventilator-match')
 
 
+
 layout = html.Div([
+    html.P(),
+    dbc.Row([
+        html.Span([
+
+            
+        ]),
+        
+    ],
+        style={'text-align': 'center'}
+    ),
+
+    html.P(),
     dbc.Row([
         dbc.Col([
-            html.Div([
-                html.H1(id='emg-data-title', children='EMG data',
+            dbc.Card([
+                dbc.CardHeader([
+                    dbc.Switch(
+                        id="pipeline-switch",
+                        label="Custom time alignment",
+                        value=False
+                    ),
+                ], "Processing pipeline", style={'text-align': 'center'}
+                ),
+                dbc.Collapse([
+                    html.P(),
+                    dbc.Col([
+                        dbc.Row([
+                            dbc.Alert(
+                                "The file is not valid",
+                                id="alert-invalid-file",
+                                dismissable=True,
+                                is_open=False,
+                                duration=4000,
+                                color="danger",
+                                style={'width': 'auto',
+                                       'left': '18px'}
+                            ),
+                            dcc.Upload(
+                                className="fas fa-upload",
+                                id='upload-processing-params',
+                                accept='application/json',
+                                style={'color': 'blue',
+                                       'background': 'transparent',
+                                       'border': 'none',
+                                       'font-size': '34px'},
+                            ),
+                            dbc.Tooltip(
+                                "Upload the parameters file",
+                                id="tooltip-upload-params",
+                                target="upload-processing-params",
+                            )
+                        ],
+                            style={'text-align': 'center'}),
+                        html.Div("Upload the parameters file",
+                                 style={'text-align': 'center'}),
+
+                      
+                        html.P(),
+                        html.Div([], id='custom-preprocessing-steps'),
+                        html.Div([], id='test-preprocessing-steps'),
+
+                        html.Div([
+                            html.Button(
+                                className="fas fa-plus-circle",
+                                id='add-steps-btn',
+                                style={'color': 'blue',
+                                       'background': 'transparent',
+                                       'border': 'none',
+                                       'font-size': '34px'}),
+                            dbc.Tooltip(
+                                "Add new step",
+                                id="tooltip-add-step",
+                                target="add-steps-btn",
+                            )
+                        ],
+                            style={'text-align': 'center'}
+                        ),
+                        html.P(),
+                    ]),
+                    html.P(),
+                    html.Div([
+                        html.Button(
+                            className="fas fa-play",
+                            id='apply-pipeline-btn',
+                            style={'color': 'green',
+                                   'background': 'transparent',
+                                   'border': 'none',
+                                   'font-size': '34px'}
+                        ),
+                        dbc.Tooltip(
+                            "Apply processing",
+                            id="tooltip-apply-pipeline",
+                            target="apply-pipeline-btn",
+                        )
+                    ],
                         style={'text-align': 'center'}
-),
-                html.Div(id='emg-filename'),
-                dbc.Button('Remove data', id='emg-delete-button',
-                           style={'background': 'red',
-                                  'border': 'transparent'})
-            ],
-                id='emg-header',
-                hidden=True,
-                style={'align': 'center'}
-            ),
-            html.Div(id='emg-graphs-container',
-                     className='six columns')
-        ], width=6),
+                    ),
+                    html.P(),
+
+                ],
+                    id='pipeline-card-body',
+                    is_open=False),
+            ])
+        ], width=2),
 
         dbc.Col([
-            html.Div([
-                html.H1(id='ventilator-data-title', children='Ventilator data',
-                        style={'text-align': 'center'}),
-                html.Div(id='ventilator-filename'),
-                dbc.Button('Remove data', id='ventilator-delete-button',
-                           style={'background': 'red',
-                                  'border': 'transparent'})
-            ],
-                id='ventilator-header', hidden=True
-            ),
-            html.Div(
-                id='ventilator-graphs-container',
-                className='six columns')
-        ], width=6)
-    ]),
-    html.Div(id='hidden-div'),
-    html.Div(id='sample-req-emg'),
-    html.Div(id='sample-req-vent')
+            dbc.Card([
+                dbc.CardHeader("Signals and ventilator", style={'text-align': 'center'}),
+                html.Div(id='signals_and_ventilator-container'),
+            ]),
+
+        ], width=9, id='processed-signals-column'),
+    
+])
 ])

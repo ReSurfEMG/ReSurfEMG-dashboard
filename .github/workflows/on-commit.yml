@@ -1,0 +1,77 @@
+name: Sanity
+on: [push]
+jobs:
+  # Sanity:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         submodules: recursive
+  #     # TODO(wvxvw): We shouldn't need this. We need to fix test
+  #     # command to install things correctly.
+  #     - uses: addnab/docker-run-action@v3
+  #       with:
+  #         username: ${{ secrets.DOCKERHUB_USERNAME }}
+  #         password: ${{ secrets.DOCKERHUB_PASSWORD }}
+  #         registry: docker.io
+  #         image: crabbone/resurfemg-poly5-test-files:latest
+  #         options: >-
+  #           -v ${{ github.workspace }}:/ci
+  #           --cap-add=SYS_ADMIN
+  #           --privileged=true
+  #         run: |
+  #           set -xe
+  #           cd /ci
+  #           mkdir -p ./not_pushed/
+  #           mount --bind /ReSurfEMG/tests/not_pushed/ ./not_pushed/
+  #           python setup.py test
+
+  Lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: s-weigand/setup-conda@v1
+        with:
+          conda-channels: conda-forge
+          python-version: 3.8
+      - run: python3 -m venv .venv
+      - run: .venv/bin/python -m pip install wheel
+      - run: .venv/bin/python setup.py lint
+
+  # Sphinx:
+  #   runs-on: ubuntu-latest
+  #   if: |
+  #     github.ref == 'refs/heads/main' ||
+  #     github.ref == 'refs/heads/wvxvw/documentation-fixes' ||
+  #     github.ref == 'refs/heads/wvxvw/readthedocs-integration'
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 0
+  #         submodules: recursive
+  #     - uses: s-weigand/setup-conda@v1
+  #       with:
+  #         conda-channels: conda-forge
+  #         python-version: 3.8
+  #     - run: python3 -m venv .venv
+  #     - run: .venv/bin/python -m pip install wheel
+  #     - run: .venv/bin/python setup.py install
+  #     - run: .venv/bin/python setup.py apidoc
+  #     - run: .venv/bin/python setup.py build_sphinx -W
+  #     - name: Publish Docs to Pages
+  #       uses: JamesIves/github-pages-deploy-action@4.1.1
+  #       with:
+  #         branch: gh-pages
+  #         folder: build/sphinx/html
+
+  # Fair-software:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: fair-software/howfairis-github-action@0.2.1
+  #       name: Measure compliance with fair-software.eu recommendations
+  #       env:
+  #         PYCHARM_HOSTED: "Trick colorama into displaying colored output" 
+  #       with:
+  #         MY_REPO_URL: "https://github.com/${{ github.repository }}"

@@ -10,7 +10,7 @@ from app import app
 server = app.server
 
 # static images
-image_filename = 'resources/resurfemg.png'
+image_filename = 'reco/resurfemg.svg'
 # pylint: disable=consider-using-with
 encoded_image = base64.b64encode(open(image_filename, 'rb').read())
 

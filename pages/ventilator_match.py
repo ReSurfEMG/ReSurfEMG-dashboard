@@ -26,11 +26,11 @@ layout = html.Div([
             dbc.Card([
                 dbc.CardHeader([
                     dbc.Switch(
-                        id="pipeline-switch",
+                        id="timeline-switch",
                         label="Custom time alignment",
                         value=False
                     ),
-                ], "Processing pipeline", style={'text-align': 'center'}
+                ], "Timeline", style={'text-align': 'center'}
                 ),
                 dbc.Collapse([
                     html.P(),
@@ -79,9 +79,9 @@ layout = html.Div([
                                        'border': 'none',
                                        'font-size': '34px'}),
                             dbc.Tooltip(
-                                "Add new step",
-                                id="tooltip-add-step",
-                                target="add-steps-btn",
+                                "Apply time difference",
+                                id="apply-time-difference",
+                                target="add-time-btn",
                             )
                         ],
                             style={'text-align': 'center'}

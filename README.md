@@ -12,8 +12,8 @@ This dashboard requires that you have an environment with certain dependencies i
      `conda env create -f environment.yml`.
    * Linux users can create their own environment by hand.
 
-Once you have entered an environment with the necessary packages, run python index.py and a url for the dashboard should appear in your terminal (open the url). 
-    `python index.py`.
+Once you have entered an environment with the necessary packages, run python  resurfemg-dashboard/index.py and a url for the dashboard should appear in your terminal (open the url). 
+    `python resurfemg-dashboard/index.py`.
 
 ## Building executable file
 

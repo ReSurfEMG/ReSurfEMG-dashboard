@@ -1,7 +1,7 @@
 import dash
 from dash import html, dcc
 import trace_updater
-
+import dash_bootstrap_components as dbc 
 
 dash.register_page(__name__, path='/emg_ventilator')
 

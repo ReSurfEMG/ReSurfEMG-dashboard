@@ -9,7 +9,7 @@ dash.register_page(__name__, path='/')
 
 modal_emg = html.Div(
     [
-        dbc.Button("Open", id="open-centered"),
+        dbc.Button("UPLOAD EMG DATA", id="open-centered"),
         dbc.Modal(
             [
                 dbc.ModalHeader(dbc.ModalTitle("Close"), close_button=True),
@@ -38,13 +38,15 @@ modal_emg = html.Div(
             id="modal-centered",
             centered=True,
             is_open=False,
+            backdrop=False,
         ),
-    ]
+    ],
+    className="d-grid gap-2"
 )
 
 modal_vent = html.Div(
     [
-        dbc.Button("Open", id="open-centered-vent"),
+        dbc.Button("UPLOAD VENTILATOR DATA", id="open-centered-vent"),
         dbc.Modal(
             [
                 dbc.ModalHeader(dbc.ModalTitle("Close"), close_button=True),
@@ -73,9 +75,12 @@ modal_vent = html.Div(
             id="modal-centered-vent",
             centered=True,
             is_open=False,
+            backdrop=False
         ),
-    ]
+    ],
+    className="d-grid gap-2"
 )
+
 
 def layout():
     return html.Div([
@@ -83,12 +88,13 @@ def layout():
         html.H1('Upload Data'),
         dbc.Row([
             dbc.Col([html.Div([
-                du.Upload(
-                    id='upload-emg-data',
-                    text='Click or Drag and Drop Here to upload EMG data!',
-                    text_completed='Uploaded: ',
-                    filetypes=['Poly5'],
-                ),
+                modal_emg,
+                # du.Upload(
+                #     id='upload-emg-data',
+                #     text='Click or Drag and Drop Here to upload EMG data!',
+                #     text_completed='Uploaded: ',
+                #     filetypes=['Poly5'],
+                # ),
             ]),
 
             ], width=6),
@@ -109,25 +115,29 @@ def layout():
             ], width=2),
         ]),
 
+        dbc.Row([html.P()]),
         dbc.Row([
             dbc.Col([html.Div([
-                du.Upload(
-                    id='upload-ventilator-data',
-                    text='Click or Drag and Drop Here to upload Ventilator data!',
-                    text_completed='Uploaded: ',
-                    filetypes=['Poly5'],
-                ),
+                modal_vent
+                # du.Upload(
+                #     id='upload-ventilator-data',
+                #     text='Click or Drag and Drop Here to upload Ventilator data!',
+                #     text_completed='Uploaded: ',
+                #     filetypes=['Poly5'],
+                # ),
             ]),
 
             ], width=6),
 
             dbc.Col([html.Div([
-                dcc.Input(
-                    id='ventilator-sample-freq',
-                    type="number",
-                    placeholder="Ventilator sampling frequency",
-                    value=100
-                ),
+
+
+                 dcc.Input(
+                     id='ventilator-sample-freq',
+                     type="number",
+                     placeholder="Ventilator sampling frequency",
+                     value=100
+                 ),
             ],
                 style={'textAlign': 'right'}),
             ], width=2),
@@ -136,7 +146,6 @@ def layout():
                 html.Div('Ventilator sampling frequency', style={'textAlign': 'left'})
             ], width=2),
         ]),
-
         html.Div(children=[
             html.H1(id='out', children='')
         ]),
@@ -146,6 +155,4 @@ def layout():
         html.Div(id='ventilator-uploaded-div'),
         html.Div(id='emg-frequency-div'),
         html.Div(id='ventilator-frequency-div'),
-        modal_emg,
-        modal_vent
     ])

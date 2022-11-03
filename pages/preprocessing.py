@@ -92,6 +92,7 @@ envelope_card = dbc.Card([
 
 layout = html.Div([
     html.P(),
+    html.Div(id='emg-filename-preprocessing'),
     dbc.Row([
         html.Span([
             html.Button(

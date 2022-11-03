@@ -15,19 +15,21 @@ json_parameters = []
 
 # on loading add the emg graphs
 @callback(Output('preprocessing-original-container', 'children'),
+          Output('emg-filename-preprocessing', 'children'),
           Input('load-preprocessing-div', 'data'))
 def show_raw_data(data):
     global card_counter
 
     emg_data = variables.get_emg()
     emg_frequency = variables.get_emg_freq()
+    filename = variables.get_emg_filename()
 
     if emg_data is not None:
         children_emg = utils.add_emg_graphs(np.array(emg_data), emg_frequency)
     else:
         children_emg = []
 
-    return children_emg
+    return children_emg, filename
 
 
 # apply the processing on the button click
@@ -397,4 +399,3 @@ def get_body(selected_value, container, id_origin):
                 container.remove(element)
         new_section = container
     return new_section
-

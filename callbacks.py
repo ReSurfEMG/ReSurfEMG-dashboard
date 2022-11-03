@@ -11,35 +11,35 @@ from dash.exceptions import PreventUpdate
 du.configure_upload(app, r"C:\tmp\Uploads", use_upload_id=True)
 
 
-@du.callback(
-    output=Output("emg-uploaded-div", "data"),
-    id="upload-emg-data",
-)
-def parse_emg(status):
-    emg_data = cv.poly5unpad(status.latest_file.__str__())
-    variables.set_emg(emg_data)
-
-    filename = 'File: ' + status.latest_file.name
-    variables.set_emg_filename(filename)
-
-    # children = utils.add_emg_graphs(emg_data)
-    return 'set'
-
-
-@du.callback(
-    output=Output('ventilator-uploaded-div', 'data'),
-    id='upload-ventilator-data',
-)
-def parse_vent(status):
-    vent_data = cv.poly5unpad(status.latest_file.__str__())
-    variables.set_ventilator(vent_data)
-
-    filename = 'File: ' + status.latest_file.name
-    variables.set_ventilator_filename(filename)
-
-    # children = utils.add_ventilator_graphs(vent_data)
-    print('vent uploaded')
-    return 'set'
+# @du.callback(
+#     output=Output("emg-uploaded-div", "data"),
+#     id="upload-emg-data",
+# )
+# def parse_emg(status):
+#     emg_data = cv.poly5unpad(status.latest_file.__str__())
+#     variables.set_emg(emg_data)
+#
+#     filename = 'File: ' + status.latest_file.name
+#     variables.set_emg_filename(filename)
+#
+#     # children = utils.add_emg_graphs(emg_data)
+#     return 'set'
+#
+#
+# @du.callback(
+#     output=Output('ventilator-uploaded-div', 'data'),
+#     id='upload-ventilator-data',
+# )
+# def parse_vent(status):
+#     vent_data = cv.poly5unpad(status.latest_file.__str__())
+#     variables.set_ventilator(vent_data)
+#
+#     filename = 'File: ' + status.latest_file.name
+#     variables.set_ventilator_filename(filename)
+#
+#     # children = utils.add_ventilator_graphs(vent_data)
+#     print('vent uploaded')
+#     return 'set'
 
 
 @callback(Output('emg-frequency-div', 'data'),

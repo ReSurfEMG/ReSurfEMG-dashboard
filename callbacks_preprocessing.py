@@ -149,7 +149,7 @@ def show_data(click,
                 # json_parameters.append(utils.build_lowpass_params_json(n + 5, high_cut))
 
             elif step == ProcessTypology.ECG_REMOVAL.value:
-                idx = utils.get_idx_dict_list(additional_rem_idx, 'index', card_id)
+                idx = utils.get_idx_dict_list(additional_rem_idx, 'index', card_id)-1
 
                 ecg_additional_method = additional_rem[idx]
                 if ecg_additional_method == EcgRemovalMethods.GATING.value:

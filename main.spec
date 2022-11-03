@@ -1,10 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
 import sys
 import mne
+import trace_updater
 
 block_cipher = None
 
 mne_path = sys.modules.get('mne').__path__[0]
+trace_updater_path = sys.modules.get('trace_updater').__path__[0]
 
 a = Analysis(
     ['main.py'],
@@ -14,6 +16,7 @@ a = Analysis(
     ('pages','pages'),
     ('resources','resources'),
     (mne_path,'mne'),
+    (trace_updater_path,'trace_updater'),
     ],
     hiddenimports=[],
     hookspath=[],

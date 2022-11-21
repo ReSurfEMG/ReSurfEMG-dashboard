@@ -3,124 +3,59 @@ import dash_uploader as du
 import dash_bootstrap_components as dbc
 from dash import html, dcc
 
+import time
+import numpy as np
+import plotly.graph_objs as go
+from dash import Input, Output
+
 
 dash.register_page(__name__, path='/ventilator-match')
 
+layout = dbc.Container(
+    [
+        dcc.Store(id="store"),
+        html.H1("Dynamically rendered tab content for ventilator and EMG (in progress)"),
+        html.Hr(),
+        dbc.Button(
+            "Regenerate graphs",
+            color="primary",
+            id="button",
+            className="mb-3",
+        ),
+        dbc.Tabs(
+            [
+                dbc.Tab(label="Original signal", tab_id="original_signal"),
+                dbc.Tab(label="Time corrected", tab_id="adjusted_signal"),
+            ],
+            id="tabs",
+            active_tab="original_signal",
+        ),
+        html.Div(id="tab-content", className="p-4"),
+    ]
+)
 
 
-layout = html.Div([
-    html.P(),
-    dbc.Row([
-        html.Span([
+def render_tab_content(active_tab, data):
+    """
+    This callback takes the 'active_tab' property as input, as well as the
+    stored graphs, and renders the tab content depending on what the value of
+    'active_tab' is.
+    """
+    if active_tab and data is not None:
+        if active_tab == "original_signal":
+            return dcc.Graph(figure=data["original_signal"])
+        elif active_tab == "adjusted_signal":
+            return dbc.Row(
+                [
+                    dbc.Col(dcc.Graph(figure=data["hist_1"]), width=6),
+                    dbc.Col(dcc.Graph(figure=data["hist_2"]), width=6),
+                ]
+            )
+    return "No tab selected"
 
-            
-        ]),
-        
-    ],
-        style={'text-align': 'center'}
-    ),
 
-    html.P(),
-    dbc.Row([
-        dbc.Col([
-            dbc.Card([
-                dbc.CardHeader([
-                    dbc.Switch(
-                        id="timeline-switch",
-                        label="Custom time alignment",
-                        value=False
-                    ),
-                ], "Timeline", style={'text-align': 'center'}
-                ),
-                dbc.Collapse([
-                    html.P(),
-                    dbc.Col([
-                        dbc.Row([
-                            dbc.Alert(
-                                "The file is not valid",
-                                id="alert-invalid-file",
-                                dismissable=True,
-                                is_open=False,
-                                duration=4000,
-                                color="danger",
-                                style={'width': 'auto',
-                                       'left': '18px'}
-                            ),
-                            dcc.Upload(
-                                className="fas fa-upload",
-                                id='upload-processing-params',
-                                accept='application/json',
-                                style={'color': 'blue',
-                                       'background': 'transparent',
-                                       'border': 'none',
-                                       'font-size': '34px'},
-                            ),
-                            dbc.Tooltip(
-                                "Upload the parameters file",
-                                id="tooltip-upload-params",
-                                target="upload-processing-params",
-                            )
-                        ],
-                            style={'text-align': 'center'}),
-                        html.Div("Upload the parameters file",
-                                 style={'text-align': 'center'}),
 
-                      
-                        html.P(),
-                        html.Div([], id='custom-preprocessing-steps'),
-                        html.Div([], id='test-preprocessing-steps'),
+if __name__ == "__main__":
+    layout.run_server(debug=True, port=8888)
 
-                        html.Div([
-                            html.Button(
-                                className="fas fa-plus-circle",
-                                id='add-steps-btn',
-                                style={'color': 'blue',
-                                       'background': 'transparent',
-                                       'border': 'none',
-                                       'font-size': '34px'}),
-                            dbc.Tooltip(
-                                "Apply time difference",
-                                id="apply-time-difference",
-                                target="add-time-btn",
-                            )
-                        ],
-                            style={'text-align': 'center'}
-                        ),
-                        html.P(),
-                    ]),
-                    html.P(),
-                    html.Div([
-                        html.Button(
-                            className="fas fa-play",
-                            id='apply-pipeline-btn',
-                            style={'color': 'green',
-                                   'background': 'transparent',
-                                   'border': 'none',
-                                   'font-size': '34px'}
-                        ),
-                        dbc.Tooltip(
-                            "Apply processing",
-                            id="tooltip-apply-pipeline",
-                            target="apply-pipeline-btn",
-                        )
-                    ],
-                        style={'text-align': 'center'}
-                    ),
-                    html.P(),
-
-                ],
-                    id='pipeline-card-body',
-                    is_open=False),
-            ])
-        ], width=2),
-
-        dbc.Col([
-            dbc.Card([
-                dbc.CardHeader("Signals and ventilator", style={'text-align': 'center'}),
-                html.Div(id='signals_and_ventilator-container'),
-            ]),
-
-        ], width=9, id='processed-signals-column'),
-    
-])
-])
+#])

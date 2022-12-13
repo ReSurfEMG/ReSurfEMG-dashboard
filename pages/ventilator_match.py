@@ -28,6 +28,9 @@ layout = dbc.Container(
         ),
         html.Div(id="tab-content", className="p-4"),
 
+        dbc.Col([
+                html.Div('EMG time shift (μs)', style={'textAlign': 'left'})
+                ], width=2, style={"color": "green"}),
         dbc.Col([html.Div([
                 dcc.Input(
                     id='time-shift-numb',
@@ -40,11 +43,11 @@ layout = dbc.Container(
                 style={'textAlign': 'right'}),
             ], width=2,),
         
-        dbc.Col([
-                html.Div('EMG time shift, milliseconds', style={'textAlign': 'left'})
-                ], width=2, style={"color": "green"}),
+        
 
-            
+        dbc.Col([
+                html.Div('EMG lead number', style={'textAlign': 'left'})
+                ], width=2, style={"color": "purple"}),           
         dbc.Col([html.Div([
                 dcc.Input(
                     id='emg-lead-numb',
@@ -59,11 +62,11 @@ layout = dbc.Container(
                 style={'textAlign': 'right'}),
             ], width=2),
         
-        dbc.Col([
-                html.Div('EMG lead number', style={'textAlign': 'left'})
-                ], width=2, style={"color": "purple"}),
-
         
+
+        dbc.Col([
+                html.Div('Vent lead number', style={'textAlign': 'left'})
+                ], width=2),
         dbc.Col([html.Div([
                 dcc.Input(
                     id='vent-lead-numb',
@@ -77,9 +80,7 @@ layout = dbc.Container(
                 style={'textAlign': 'right'}),
             ], width=2),
         
-        dbc.Col([
-                html.Div('Vent lead number', style={'textAlign': 'left'})
-                ], width=2),
+        
        
        
     ]

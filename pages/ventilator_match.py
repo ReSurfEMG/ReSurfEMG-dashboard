@@ -86,24 +86,6 @@ layout = dbc.Container(
 )
 
 
-def render_tab_content(active_tab, data):
-    """
-    This callback takes the 'active_tab' property as input, as well as the
-    stored graphs, and renders the tab content depending on what the value of
-    'active_tab' is.
-    """
-    if active_tab and data is not None:
-        if active_tab == "original_signal":
-            return dcc.Graph(figure=data["original_signal"])
-        elif active_tab == "adjusted_signal":
-            return dbc.Row(
-                [
-                    dbc.Col(dcc.Graph(figure=data["hist_1"]), width=6),
-                    dbc.Col(dcc.Graph(figure=data["hist_2"]), width=6),
-                ]
-            )
-    return "No tab selected"
-
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 import dash
+import definitions
 import json
 import numpy as np
 import pandas as pd
@@ -150,7 +151,7 @@ def show_data(click,
                 # json_parameters.append(utils.build_lowpass_params_json(n + 5, high_cut))
 
             elif step == ProcessTypology.ECG_REMOVAL.value:
-                idx = utils.get_idx_dict_list(additional_rem_idx, 'index', card_id)
+                idx = utils.get_idx_dict_list(additional_rem_idx, 'index', card_id)-1
 
                 ecg_additional_method = additional_rem[idx]
                 if ecg_additional_method == EcgRemovalMethods.GATING.value:
@@ -235,10 +236,11 @@ def collapse_graph(toggle_value):
           Input('add-steps-btn', 'n_clicks'),
           Input({"type": "step-close-button", "index": ALL}, "n_clicks"),
           Input('confirm-upload', 'submit_n_clicks'),
+          Input('confirm-reset', 'submit_n_clicks'),
           State('upload-processing-params', 'contents'),
           State('custom-preprocessing-steps', 'children'),
           prevent_initial_call=False)
-def add_step(click, close, confirm, params_file, previous_content):
+def add_step(click, close, confirm_upload, confirm_reset, params_file, previous_content):
     global card_counter
 
     id_ctx = ctx.triggered_id
@@ -257,10 +259,16 @@ def add_step(click, close, confirm, params_file, previous_content):
             updated_content = previous_content + [new_card, html.P()]
     # if the param file has been added (after button confirmation)
     elif id_ctx == 'confirm-upload':
-        if confirm:
+        if confirm_upload:
             card_counter = 0
             updated_content, card_counter = utils.upload_additional_steps(params_file)
         else: # if the operation is cancelled, do nothing
+            updated_content = previous_content
+    # if the restore params button has been clicked
+    elif id_ctx == 'confirm-reset':
+        if confirm_reset:
+            updated_content = []
+        else:  # if the operation is cancelled, do nothing
             updated_content = previous_content
     # if the remove button is clicked, remove the card
     else:
@@ -354,19 +362,39 @@ def populate_steps(params_file):
     return open_confirmation, open_alert
 
 
-# the user confirms the params upload
+# reset params
+@callback(Output('confirm-reset', 'displayed'),
+          Input('restore-default-btn', 'n_clicks'),
+          prevent_initial_call=True)
+def populate_steps(reset_button):
+    open_confirmation = True
+
+    return open_confirmation
+
+
+# the user confirms the params upload or the reset button is pressed
 @callback(Output('tail-cut-percent', 'value'),
           Output('tail-cut-tolerance', 'value'),
           Output('base-filter-low', 'value'),
           Output('base-filter-high', 'value'),
-          Output('ecg-filter-select', 'value'),
+          Output({"type": "ecg-filter-select", "index": "0"}, 'value'),
           Output('envelope-extraction-select', 'value'),
           Input('confirm-upload', 'submit_n_clicks'),
+          Input('confirm-reset', 'submit_n_clicks'),
           State('upload-processing-params', 'contents'),
           prevent_initial_call=True)
-def populate_steps(confirm, params_file):
+def populate_steps(confirm_upload, confirm_reset, params_file):
+    trigger_id = ctx.triggered_id
 
-    if confirm:
+    if trigger_id == 'confirm-reset' and confirm_reset:
+        bandpass_low = definitions.default_bandpass_low
+        bandpass_high = definitions.default_bandpass_high
+        first_cut_percentage = definitions.default_first_cut_percentage
+        first_cut_tolerance = definitions.default_first_cut_tolerance
+        ecg_removal_value = definitions.default_ecg_removal_value
+        envelope_value = definitions.default_envelope_value
+
+    if trigger_id == 'confirm-upload' and confirm_upload:
 
         data = utils.param_file_to_json(params_file)
 
@@ -381,6 +409,7 @@ def populate_steps(confirm, params_file):
         envelope = data[-1]['method']
         envelope_value = utils.get_envelope_method_value(envelope)
 
+    if confirm_reset or confirm_upload:
         return first_cut_percentage, first_cut_tolerance, bandpass_low, bandpass_high, ecg_removal_value, envelope_value
 
 

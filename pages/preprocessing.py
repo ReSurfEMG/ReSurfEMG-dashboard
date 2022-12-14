@@ -1,10 +1,10 @@
 import dash
 import dash_bootstrap_components as dbc
-import dash_uploader as du
+import definitions
 from dash import html, dcc
 
 import utils
-from definitions import EcgRemovalMethods, EnvelopeMethod
+from definitions import EnvelopeMethod
 
 dash.register_page(__name__, path='/preprocessing')
 
@@ -18,7 +18,7 @@ tailcut_card = dbc.Card([
                     id='tail-cut-percent',
                     type="number",
                     placeholder="%",
-                    value=3
+                    value=definitions.default_first_cut_percentage
                 )
             ]),
             dbc.Col([
@@ -27,7 +27,7 @@ tailcut_card = dbc.Card([
                     id='tail-cut-tolerance',
                     type="number",
                     placeholder="%",
-                    value=5
+                    value=definitions.default_first_cut_tolerance
                 )
             ])
         ])
@@ -44,7 +44,7 @@ baseline_card = dbc.Card([
                     id='base-filter-low',
                     type="number",
                     placeholder="low cut",
-                    value=3
+                    value=definitions.default_bandpass_low
                 )
             ]),
             dbc.Col([
@@ -53,7 +53,7 @@ baseline_card = dbc.Card([
                     id='base-filter-high',
                     type="number",
                     placeholder="high cut",
-                    value=450
+                    value=definitions.default_bandpass_high
                 )
             ])
         ])
@@ -63,16 +63,6 @@ baseline_card = dbc.Card([
 ecg_card = dbc.Card([
     dbc.CardHeader("ECG removal"),
     utils.get_ecg_removal_layout({"type": "ecg-filter-select", "index": "0"})
-    # dbc.Label("ECG removal method"),
-    # dbc.Select(
-    #     id={"type": "ecg-filter-select", "index": "default"},
-    #     options=[
-    #         {"label": "ICA", "value": EcgRemovalMethods.ICA},
-    #         {"label": "Gating", "value": EcgRemovalMethods.GATING},
-    #         {"label": "None", "value": EcgRemovalMethods.NONE},
-    #     ],
-    #     value="1"
-    # )
 ],
     id={"type": "ecg-removal-type", "index": "0"})
 
@@ -86,7 +76,7 @@ envelope_card = dbc.Card([
             {"label": "Filtering", "value": EnvelopeMethod.FILTERING},
             {"label": "None", "value": EnvelopeMethod.NONE},
         ],
-        value="1"
+        value=definitions.default_envelope_value
     )
 ])
 
@@ -159,6 +149,25 @@ layout = html.Div([
                             style={'text-align': 'center'}),
                         html.Div("Upload the parameters file",
                                  style={'text-align': 'center'}),
+                        html.P(),
+                        dbc.Row([
+                            html.Button(
+                                className="fas fa-undo",
+                                id='restore-default-btn',
+                                style={'color': 'black',
+                                       'background': 'transparent',
+                                       'border': 'none',
+                                       'font-size': '34px'},
+                            ),
+                            dbc.Tooltip(
+                                "Restore default pipeline",
+                                id="tooltip-restore-pipeline",
+                                target="restore-default-btn",
+                            )
+                        ],
+                            style={'text-align': 'center'}),
+                        html.Div("Restore default pipeline",
+                                 style={'text-align': 'center'}),
 
                         tailcut_card,
                         html.P(),
@@ -167,7 +176,6 @@ layout = html.Div([
                         ecg_card,
                         html.P(),
                         html.Div([], id='custom-preprocessing-steps'),
-                        html.Div([], id='test-preprocessing-steps'),
 
                         html.Div([
                             html.Button(
@@ -246,5 +254,9 @@ layout = html.Div([
     dcc.ConfirmDialog(
         id='confirm-upload',
         message='Uploading the parameters will overwrite the current settings. Are you sure you want to continue?',
+    ),
+    dcc.ConfirmDialog(
+        id='confirm-reset',
+        message='Resetting the parameters will overwrite the current settings. Are you sure you want to continue?',
     ),
 ])

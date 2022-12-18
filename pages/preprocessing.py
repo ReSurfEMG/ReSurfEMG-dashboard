@@ -223,7 +223,10 @@ layout = html.Div([
 
         dbc.Col([
             dbc.Card([
-                dbc.CardHeader("Processed signals", style={'text-align': 'center'}),
+                dbc.CardHeader(
+                    "Processed signals",
+                    style={'text-align': 'center'},
+                ),
                 html.Div(id='preprocessing-processed-container'),
             ]),
 

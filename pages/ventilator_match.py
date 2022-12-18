@@ -17,16 +17,7 @@ layout = dbc.Container(
         html.H1("Dynamically rendered tab content for ventilator and EMG (in progress)"),
         html.Hr(),
         
-        dbc.Tabs(
-            [
-                dbc.Tab(label="Time corrected", tab_id="adjusted_signal"),
-                dbc.Tab(label="Original signal", tab_id="original_signal"),
-                
-            ],
-            id="tabs",
-            active_tab="original_signal",
-        ),
-        html.Div(id="tab-content", className="p-4"),
+        
 
         dbc.Col([
                 html.Div('EMG time shift (μs)', style={'textAlign': 'left'})
@@ -46,7 +37,7 @@ layout = dbc.Container(
         
 
         dbc.Col([
-                html.Div('EMG lead number', style={'textAlign': 'left'})
+                html.Div('EMG lead displayed', style={'textAlign': 'left'})
                 ], width=2, style={"color": "purple"}),           
         dbc.Col([html.Div([
                 dcc.Input(
@@ -65,7 +56,7 @@ layout = dbc.Container(
         
 
         dbc.Col([
-                html.Div('Vent lead number', style={'textAlign': 'left'})
+                html.Div('Vent lead displayed', style={'textAlign': 'left'})
                 ], width=2),
         dbc.Col([html.Div([
                 dcc.Input(
@@ -81,6 +72,9 @@ layout = dbc.Container(
             ], width=2),
         
         dcc.Graph(id= 'overlaid'),
+        dbc.Button('Save time corrected data', id='saver-button',
+                           style={'background': 'blue',
+                                  'border': 'transparent'}),
         html.Div(id='hidden-div'),
        
        

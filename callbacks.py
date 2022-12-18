@@ -105,6 +105,23 @@ def show_raw_data(ventilator_data, delete):
 
     return children_vent, hidden, filename
 
+@callback(Output('overlaid', 'children'),
+          Input('hidden-div', 'data'),)
+def show_raw_data(emg_data, delete):
+    emg_data = variables.get_emg()
+    hidden = True
+
+    trigger_id = ctx.triggered_id
+    filename = variables.get_emg_filename()
+
+    if emg_data is not None:
+        emg_frequency = variables.get_emg_freq()
+        children_emg = utils.add_emg_graphs(np.array(emg_data), emg_frequency)
+        hidden = False
+    else:
+        children_emg = []
+
+    return children_emg, hidden, filename
 
 @app.callback(
     Output({"type": "dynamic-updater", "index": MATCH}, "updateData"),

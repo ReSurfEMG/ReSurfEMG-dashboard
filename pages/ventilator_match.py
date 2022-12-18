@@ -80,7 +80,8 @@ layout = dbc.Container(
                 style={'textAlign': 'right'}),
             ], width=2),
         
-        
+        dcc.Graph(id= 'overlaid'),
+        html.Div(id='hidden-div'),
        
        
     ]

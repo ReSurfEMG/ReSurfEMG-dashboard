@@ -2,83 +2,54 @@ import os
 
 import dash
 import dash_bootstrap_components as dbc
-import dash_uploader as du
+from definitions import (PATH_BTN, FILE_PATH_INPUT, STORED_CWD, CWD,
+                         CWD_FILES, CONFIRM_CENTERED, MODAL_CENTERED,
+                         EMG_OPEN_CENTERED, VENT_OPEN_CENTERED, PARENT_DIR)
 from dash import html, dcc
 
 dash.register_page(__name__, path='/')
 
 modal_emg = html.Div(
     [
-        dbc.Button("UPLOAD EMG DATA", id="open-centered"),
         dbc.Modal(
             [
                 dbc.ModalHeader(dbc.ModalTitle("Close"), close_button=True),
                 dbc.ModalBody([
                     dbc.Row([
+                        dbc.Col([
+                            dbc.Button(id=PATH_BTN)
+                        ]),
+                        dbc.Col([
+                            dcc.Input(id=FILE_PATH_INPUT)
+                        ])
+                    ]),
+                    dbc.Row([
                         dbc.Col(lg=1, sm=1, md=1),
                         dbc.Col([
-                            dcc.Store(id={'type': 'stored_cwd', 'index': 'emg'}, data=os.getcwd()),
+                            dcc.Store(id=STORED_CWD, data=os.getcwd()),
                             html.H1('Select EMG file'),
                             html.Hr(), html.Br(), html.Br(), html.Br(),
-                            html.H5(html.B(html.A("⬆️ Parent directory", href='#', id={'type': 'parent_dir', 'index': 'emg'}))),
-                            html.H3([html.Code(os.getcwd(), id=({'type': 'cwd', 'index': 'emg'}))]),
+                            html.H5(html.B(html.A("⬆️ Parent directory", href='#', id=PARENT_DIR))),
+                            html.H3([html.Code(os.getcwd(), id=CWD)]),
                             html.Br(), html.Br(),
-                            html.Div(id={'type': 'cwd_files', 'index': 'emg'}),
+                            html.Div(id=CWD_FILES),
                         ], lg=10, sm=11, md=10)
                     ])]),
                 dbc.ModalFooter(
                     dbc.Button(
                         "Confirm",
-                        id="confirm-centered",
+                        id=CONFIRM_CENTERED,
                         className="ms-auto",
                         n_clicks=0,
                     )
                 ),
             ],
-            id="modal-centered",
+            id=MODAL_CENTERED,
             centered=True,
             is_open=False,
             backdrop=False,
         ),
-    ],
-    className="d-grid gap-2"
-)
-
-modal_vent = html.Div(
-    [
-        dbc.Button("UPLOAD VENTILATOR DATA", id="open-centered-vent"),
-        dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Close"), close_button=True),
-                dbc.ModalBody([
-                    dbc.Row([
-                        dbc.Col(lg=1, sm=1, md=1),
-                        dbc.Col([
-                            dcc.Store(id={'type': 'stored_cwd', 'index': 'vent'}, data=os.getcwd()),
-                            html.H1('Select EMG file'),
-                            html.Hr(), html.Br(), html.Br(), html.Br(),
-                            html.H5(html.B(html.A("⬆️ Parent directory", href='#', id={'type': 'parent_dir', 'index': 'vent'}))),
-                            html.H3([html.Code(os.getcwd(), id=({'type': 'cwd', 'index': 'vent'}))]),
-                            html.Br(), html.Br(),
-                            html.Div(id={'type': 'cwd_files', 'index': 'vent'}),
-                        ], lg=10, sm=11, md=10)
-                    ])]),
-                dbc.ModalFooter(
-                    dbc.Button(
-                        "Confirm",
-                        id="confirm-centered-vent",
-                        className="ms-auto",
-                        n_clicks=0,
-                    )
-                ),
-            ],
-            id="modal-centered-vent",
-            centered=True,
-            is_open=False,
-            backdrop=False
-        ),
-    ],
-    className="d-grid gap-2"
+    ]
 )
 
 
@@ -86,16 +57,12 @@ def layout():
     return html.Div([
 
         html.H1('Upload Data'),
+        modal_emg,
         dbc.Row([
             dbc.Col([html.Div([
-                modal_emg,
-                # du.Upload(
-                #     id='upload-emg-data',
-                #     text='Click or Drag and Drop Here to upload EMG data!',
-                #     text_completed='Uploaded: ',
-                #     filetypes=['Poly5'],
-                # ),
-            ]),
+                dbc.Button("UPLOAD EMG DATA", id=EMG_OPEN_CENTERED),
+            ],
+                className="d-grid gap-2"),
 
             ], width=6),
 
@@ -118,14 +85,9 @@ def layout():
         dbc.Row([html.P()]),
         dbc.Row([
             dbc.Col([html.Div([
-                modal_vent
-                # du.Upload(
-                #     id='upload-ventilator-data',
-                #     text='Click or Drag and Drop Here to upload Ventilator data!',
-                #     text_completed='Uploaded: ',
-                #     filetypes=['Poly5'],
-                # ),
-            ]),
+                dbc.Button("UPLOAD VENTILATOR DATA", id=VENT_OPEN_CENTERED),
+            ],
+                className="d-grid gap-2"),
 
             ], width=6),
 

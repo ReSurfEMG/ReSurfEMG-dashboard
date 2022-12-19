@@ -1,5 +1,5 @@
 import os
-from dash import Input, Output, callback, ctx, MATCH, State, html, ALL
+from dash import Input, Output, callback, ctx, MATCH, State, html, ALL, callback_context
 import dash_uploader as du
 from app import app, variables
 import utils
@@ -7,39 +7,15 @@ import numpy as np
 import resurfemg.converter_functions as cv
 from pathlib import Path
 from dash.exceptions import PreventUpdate
+from definitions import (PATH_BTN, FILE_PATH_INPUT, STORED_CWD, CWD,
+                         CWD_FILES, CONFIRM_CENTERED, MODAL_CENTERED,
+                         EMG_OPEN_CENTERED, VENT_OPEN_CENTERED, PARENT_DIR,
+                         LISTED_FILES)
 
 du.configure_upload(app, r"C:\tmp\Uploads", use_upload_id=True)
 
-
-# @du.callback(
-#     output=Output("emg-uploaded-div", "data"),
-#     id="upload-emg-data",
-# )
-# def parse_emg(status):
-#     emg_data = cv.poly5unpad(status.latest_file.__str__())
-#     variables.set_emg(emg_data)
-#
-#     filename = 'File: ' + status.latest_file.name
-#     variables.set_emg_filename(filename)
-#
-#     # children = utils.add_emg_graphs(emg_data)
-#     return 'set'
-#
-#
-# @du.callback(
-#     output=Output('ventilator-uploaded-div', 'data'),
-#     id='upload-ventilator-data',
-# )
-# def parse_vent(status):
-#     vent_data = cv.poly5unpad(status.latest_file.__str__())
-#     variables.set_ventilator(vent_data)
-#
-#     filename = 'File: ' + status.latest_file.name
-#     variables.set_ventilator_filename(filename)
-#
-#     # children = utils.add_ventilator_graphs(vent_data)
-#     print('vent uploaded')
-#     return 'set'
+# variable to keep track of which upload button has been clicked
+clicked_input_btn = None
 
 
 @callback(Output('emg-frequency-div', 'data'),
@@ -119,66 +95,71 @@ def update_figure(relayoutdata: dict, graph_id_dict: dict):
 
 
 @app.callback(
-    Output("modal-centered", "is_open"),
-    [Input("open-centered", "n_clicks"), Input("confirm-centered", "n_clicks")],
-    [State("modal-centered", "is_open"), State({'type': 'stored_cwd', 'index': 'emg'}, 'data')],
+    Output(MODAL_CENTERED, 'is_open'),
+    [Input(EMG_OPEN_CENTERED, 'n_clicks'), Input(VENT_OPEN_CENTERED, 'n_clicks'), Input(CONFIRM_CENTERED, 'n_clicks')],
+    [State(MODAL_CENTERED, 'is_open'), State(STORED_CWD, 'data')],
     prevent_initial_call=True
 )
-def toggle_modal(n1, n2, is_open, selected_file):
-    if ctx.triggered_id == "confirm-centered":
-        emg_data = cv.poly5unpad(selected_file)
-        variables.set_emg(emg_data)
+def toggle_modal(n1, n2, n3, is_open, selected_file):
+    global clicked_input_btn
 
-        filename = 'File: ' + selected_file
-        variables.set_emg_filename(filename)
+    if ctx.triggered_id in [EMG_OPEN_CENTERED, VENT_OPEN_CENTERED]:
+        clicked_input_btn = ctx.triggered_id
+
+    if ctx.triggered_id == CONFIRM_CENTERED:
+        data = cv.poly5unpad(selected_file)
+        if clicked_input_btn == EMG_OPEN_CENTERED:
+            variables.set_emg(data)
+            variables.set_emg_filename('File: ' + selected_file)
+        elif clicked_input_btn == VENT_OPEN_CENTERED:
+            variables.set_ventilator(data)
+            variables.set_ventilator_filename('File: ' + selected_file)
     return not is_open
 
 
 @app.callback(
-    Output("modal-centered-vent", "is_open"),
-    [Input("open-centered-vent", "n_clicks"), Input("confirm-centered-vent", "n_clicks")],
-    [State("modal-centered-vent", "is_open"), State({'type': 'stored_cwd', 'index': 'vent'}, 'data')],
-    prevent_initial_call=True
-)
-def toggle_modal(n1, n2, is_open, selected_file):
-    if ctx.triggered_id == "confirm-centered-vent":
-        ventilator_data = cv.poly5unpad(selected_file)
-        variables.set_ventilator(ventilator_data)
-
-        filename = 'File: ' + selected_file
-        variables.set_ventilator_filename(filename)
-    return not is_open
-
-
-@app.callback(
-    Output({'type': 'cwd', 'index': MATCH}, 'children'),
-    Input({'type': 'stored_cwd', 'index': MATCH}, 'data'),
-    Input({'type': 'parent_dir', 'index': MATCH}, 'n_clicks'),
-    Input({'type': 'cwd', 'index': MATCH}, 'children'),
+    Output(CWD, 'children'),
+    Input(STORED_CWD, 'data'),
+    Input(PARENT_DIR, 'n_clicks'),
+    Input(CWD, 'children'),
     prevent_initial_call=True)
-def get_parent_directory(stored_cwd, n_clicks, currentdir):
-    triggered_id = ctx.triggered_id
-    if triggered_id['type'] == 'stored_cwd':
+def get_parent_directory_emg(stored_cwd, n_clicks, currentdir):
+    triggered_id = callback_context.triggered_id
+    if triggered_id == STORED_CWD:
         return stored_cwd
     parent = Path(currentdir).parent.as_posix()
     return parent
 
 
 @app.callback(
-    Output({'type': 'cwd_files', 'index': MATCH}, 'children'),
-    Input({'type': 'cwd', 'index': MATCH}, 'children'))
-def list_cwd_files(cwd):
-    path = Path(cwd)
+    Output(CWD_FILES, 'children'),
+    State(FILE_PATH_INPUT, 'value'),
+    Input(CWD, 'children'),
+    Input(PATH_BTN, 'n_clicks')
+    )
+def list_cwd_files(path_input, cwd, path_btn):
+    trigger = ctx.triggered_id
+    manual_input = False
+    if trigger is not None and trigger == PATH_BTN:
+        path = Path(path_input)
+        manual_input = True
+    else:
+        path = Path(cwd)
+
     cwd_files = []
     if path.is_dir():
         files = sorted(os.listdir(path), key=str.lower)
         for i, file in enumerate(files):
             filepath = Path(file)
-            full_path=os.path.join(cwd, filepath.as_posix())
+            if manual_input:
+                full_path = path
+            else:
+                full_path = os.path.join(cwd, filepath.as_posix())
+
             is_dir = Path(full_path).is_dir()
             link = html.A([
                 html.Span(
-                file, id={'type': 'listed_file', 'index': i},
+                file, id={'type': LISTED_FILES, 'index': i},
                 title=full_path,
                 style={'fontWeight': 'bold'} if is_dir else {}
             )], href='#')
@@ -186,29 +167,16 @@ def list_cwd_files(cwd):
             cwd_files.append(prepend)
             cwd_files.append(link)
             cwd_files.append(html.Br())
+
     return cwd_files
 
 
 @app.callback(
-    Output({'type': 'stored_cwd', 'index': 'emg'}, 'data'),
-    Input({'type': 'listed_file', 'index': ALL}, 'n_clicks'),
-    State({'type': 'listed_file', 'index': ALL}, 'children'),
-    State({'type': 'listed_file', 'index': ALL}, 'title'),
-    State({'type': 'cwd', 'index': 'emg'}, 'children'))
-def store_clicked_file(n_clicks, href, title, cwd):
-    if not n_clicks or set(n_clicks) == {None}:
-        raise PreventUpdate
-    index = ctx.triggered_id['index']
-    return title[index]
-
-
-
-@app.callback(
-    Output({'type': 'stored_cwd', 'index': 'vent'}, 'data'),
-    Input({'type': 'listed_file', 'index': ALL}, 'n_clicks'),
-    State({'type': 'listed_file', 'index': ALL}, 'children'),
-    State({'type': 'listed_file', 'index': ALL}, 'title'),
-    State({'type': 'cwd', 'index': 'vent'}, 'children'))
+    Output(STORED_CWD, 'data'),
+    Input({'type': LISTED_FILES, 'index': ALL}, 'n_clicks'),
+    State({'type': LISTED_FILES, 'index': ALL}, 'children'),
+    State({'type': LISTED_FILES, 'index': ALL}, 'title'),
+    State(CWD, 'children'))
 def store_clicked_file(n_clicks, href, title, cwd):
     if not n_clicks or set(n_clicks) == {None}:
         raise PreventUpdate

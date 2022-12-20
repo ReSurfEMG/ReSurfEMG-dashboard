@@ -8,7 +8,7 @@ from definitions import (PATH_BTN, FILE_PATH_INPUT, STORED_CWD, CWD,
                          CWD_FILES, CONFIRM_CENTERED, MODAL_CENTERED,
                          EMG_OPEN_CENTERED, VENT_OPEN_CENTERED, PARENT_DIR,
                          LISTED_FILES, VENT_FREQUENCY_DIV, VENT_SAMPLING_FREQUENCY, EMG_FREQUENCY_DIV,
-                         EMG_SAMPLING_FREQUENCY)
+                         EMG_SAMPLING_FREQUENCY, VENT_FILE_UPDATED, EMG_FILE_UPDATED)
 
 # variable to keep track of which upload button has been clicked
 clicked_input_btn = None
@@ -29,26 +29,39 @@ def update_ventilator_frequency(freq):
 
 
 @app.callback(
-    Output(MODAL_CENTERED, 'is_open'),
+    [Output(MODAL_CENTERED, 'is_open'), Output(EMG_FILE_UPDATED, 'children'), Output(VENT_FILE_UPDATED, 'children')],
     [Input(EMG_OPEN_CENTERED, 'n_clicks'), Input(VENT_OPEN_CENTERED, 'n_clicks'), Input(CONFIRM_CENTERED, 'n_clicks')],
-    [State(MODAL_CENTERED, 'is_open'), State(STORED_CWD, 'data')],
+    [State(MODAL_CENTERED, 'is_open'), State(STORED_CWD, 'data'),
+     State(EMG_FILE_UPDATED, 'children'), State(VENT_FILE_UPDATED, 'children')],
     prevent_initial_call=True
 )
-def toggle_modal(n1, n2, n3, is_open, selected_file):
+def toggle_modal(n1, n2, n3, is_open, selected_file, current_msg_emg, current_msg_vent):
     global clicked_input_btn
+
+    message_emg = current_msg_emg
+    message_vent = current_msg_vent
 
     if ctx.triggered_id in [EMG_OPEN_CENTERED, VENT_OPEN_CENTERED]:
         clicked_input_btn = ctx.triggered_id
 
     if ctx.triggered_id == CONFIRM_CENTERED:
-        data = cv.poly5unpad(selected_file)
-        if clicked_input_btn == EMG_OPEN_CENTERED:
-            variables.set_emg(data)
-            variables.set_emg_filename('File: ' + selected_file)
-        elif clicked_input_btn == VENT_OPEN_CENTERED:
-            variables.set_ventilator(data)
-            variables.set_ventilator_filename('File: ' + selected_file)
-    return not is_open
+        try:
+            data = cv.poly5unpad(selected_file)
+            if clicked_input_btn == EMG_OPEN_CENTERED:
+                variables.set_emg(data)
+                variables.set_emg_filename('File: ' + selected_file)
+                message_emg = 'File correctly uploaded: ' + selected_file
+            elif clicked_input_btn == VENT_OPEN_CENTERED:
+                variables.set_ventilator(data)
+                variables.set_ventilator_filename('File: ' + selected_file)
+                message_vent = 'File correctly uploaded: ' + selected_file
+        except:
+            if clicked_input_btn == EMG_OPEN_CENTERED:
+                message_emg = 'The selected file is not valid'
+            elif clicked_input_btn == VENT_OPEN_CENTERED:
+                message_vent = 'The selected file is not valid'
+
+    return not is_open, message_emg, message_vent
 
 
 @app.callback(

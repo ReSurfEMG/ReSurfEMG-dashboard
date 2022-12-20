@@ -1,7 +1,6 @@
 import dash
-import dash_uploader as du
 import dash_bootstrap_components as dbc
-from dash import html, dcc
+from dash import html
 
 
 dash.register_page(__name__, path='/view-raw')

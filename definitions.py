@@ -1,6 +1,5 @@
 from enum import Enum
 
-
 FILE_IDENTIFIER = 'resurfemg_paramfile'
 
 
@@ -38,3 +37,24 @@ default_first_cut_percentage = 3
 default_first_cut_tolerance = 5
 default_ecg_removal_value = EcgRemovalMethods.ICA
 default_envelope_value = EnvelopeMethod.RMS
+
+# IDs for graphical elements
+
+# DATA UPLOAD PAGE
+CONFIRM_CENTERED = 'confirm-centered'
+CWD = 'cwd'
+CWD_FILES = 'cwd-files'
+EMG_FILE_UPDATED = 'emg-file-updated'
+EMG_FREQUENCY_DIV = 'emg-frequency-div'
+EMG_OPEN_CENTERED = 'open-centered-emg'
+EMG_SAMPLING_FREQUENCY = 'emg-sample-freq'
+FILE_PATH_INPUT = 'file-path-input'
+LISTED_FILES = 'listed_file'
+MODAL_CENTERED = 'modal-centered'
+PARENT_DIR = 'parent-dir'
+PATH_BTN = 'path-button'
+STORED_CWD = 'stored-cwd'
+VENT_FILE_UPDATED = 'ventilator-file-updated'
+VENT_FREQUENCY_DIV = 'ventilator-frequency-div'
+VENT_OPEN_CENTERED = 'open-centered-vent'
+VENT_SAMPLING_FREQUENCY = 'ventilator-sample-freq'

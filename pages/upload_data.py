@@ -9,31 +9,30 @@ from dash import html, dcc
 
 dash.register_page(__name__, path='/')
 
-modal_emg = html.Div(
+modal_dialog = html.Div(
     [
         dbc.Modal(
             [
                 dbc.ModalHeader(dbc.ModalTitle("Close"), close_button=True),
                 dbc.ModalBody([
                     dbc.Row([
+                        html.H1('Select file'),
                         dbc.Col([
-                            dbc.Button(id=PATH_BTN)
-                        ]),
+                            dbc.Button('GO TO', id=PATH_BTN)
+                        ], width=2, className="d-grid gap-2"),
                         dbc.Col([
-                            dcc.Input(id=FILE_PATH_INPUT)
-                        ])
+                            dcc.Input(id=FILE_PATH_INPUT, placeholder='Insert the path to the file')
+                        ], className="d-grid gap-2")
                     ]),
                     dbc.Row([
-                        dbc.Col(lg=1, sm=1, md=1),
-                        dbc.Col([
+                        html.P()
+                    ]),
+                    dbc.Row([
                             dcc.Store(id=STORED_CWD, data=os.getcwd()),
-                            html.H1('Select EMG file'),
-                            html.Hr(), html.Br(), html.Br(), html.Br(),
                             html.H5(html.B(html.A("⬆️ Parent directory", href='#', id=PARENT_DIR))),
                             html.H3([html.Code(os.getcwd(), id=CWD)]),
                             html.Br(), html.Br(),
-                            html.Div(id=CWD_FILES),
-                        ], lg=10, sm=11, md=10)
+                            html.Div(id=CWD_FILES)
                     ])]),
                 dbc.ModalFooter(
                     dbc.Button(
@@ -48,6 +47,7 @@ modal_emg = html.Div(
             centered=True,
             is_open=False,
             backdrop=False,
+            scrollable=True
         ),
     ]
 )
@@ -57,7 +57,7 @@ def layout():
     return html.Div([
 
         html.H1('Upload Data'),
-        modal_emg,
+        modal_dialog,
         dbc.Row([
             dbc.Col([html.Div([
                 dbc.Button("UPLOAD EMG DATA", id=EMG_OPEN_CENTERED),

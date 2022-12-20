@@ -17,6 +17,7 @@ def show_raw_data(delete):
 
     if trigger_id == 'emg-delete-button':
         variables.set_emg(None)
+        variables.set_emg_filename(None)
         children_emg = []
     else:
         if emg_data is not None:
@@ -42,6 +43,7 @@ def show_raw_data(delete):
 
     if trigger_id == 'ventilator-delete-button':
         variables.set_ventilator(None)
+        variables.set_ventilator_filename(None)
         children_vent = []
     else:
         if ventilator_data is not None:

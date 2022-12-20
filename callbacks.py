@@ -119,42 +119,36 @@ def toggle_modal(n1, n2, n3, is_open, selected_file):
 
 @app.callback(
     Output(CWD, 'children'),
+    State(FILE_PATH_INPUT, 'value'),
     Input(STORED_CWD, 'data'),
     Input(PARENT_DIR, 'n_clicks'),
     Input(CWD, 'children'),
+    Input(PATH_BTN, 'n_clicks'),
     prevent_initial_call=True)
-def get_parent_directory_emg(stored_cwd, n_clicks, currentdir):
+def get_parent_directory_emg(path_input, stored_cwd, n_clicks, currentdir, path_btn):
     triggered_id = callback_context.triggered_id
     if triggered_id == STORED_CWD:
-        return stored_cwd
-    parent = Path(currentdir).parent.as_posix()
-    return parent
+        path = stored_cwd
+    elif triggered_id == PATH_BTN:
+        path = Path(path_input).parent.as_posix()
+    elif triggered_id == PARENT_DIR:
+        path = Path(currentdir).parent.as_posix()
+
+    return path if os.path.exists(path) or os.path.isfile(path) else 'Path not valid'
 
 
 @app.callback(
     Output(CWD_FILES, 'children'),
-    State(FILE_PATH_INPUT, 'value'),
-    Input(CWD, 'children'),
-    Input(PATH_BTN, 'n_clicks')
-    )
-def list_cwd_files(path_input, cwd, path_btn):
-    trigger = ctx.triggered_id
-    manual_input = False
-    if trigger is not None and trigger == PATH_BTN:
-        path = Path(path_input)
-        manual_input = True
-    else:
-        path = Path(cwd)
+    Input(CWD, 'children'))
+def list_cwd_files(cwd):
+    path = Path(cwd)
 
     cwd_files = []
     if path.is_dir():
         files = sorted(os.listdir(path), key=str.lower)
         for i, file in enumerate(files):
             filepath = Path(file)
-            if manual_input:
-                full_path = path
-            else:
-                full_path = os.path.join(cwd, filepath.as_posix())
+            full_path = os.path.join(cwd, filepath.as_posix())
 
             is_dir = Path(full_path).is_dir()
             link = html.A([

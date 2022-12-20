@@ -4,7 +4,9 @@ import dash
 import dash_bootstrap_components as dbc
 from definitions import (PATH_BTN, FILE_PATH_INPUT, STORED_CWD, CWD,
                          CWD_FILES, CONFIRM_CENTERED, MODAL_CENTERED,
-                         EMG_OPEN_CENTERED, VENT_OPEN_CENTERED, PARENT_DIR)
+                         EMG_OPEN_CENTERED, VENT_OPEN_CENTERED, PARENT_DIR,
+                         EMG_SAMPLING_FREQUENCY, VENT_SAMPLING_FREQUENCY,
+                         VENT_FREQUENCY_DIV, EMG_FREQUENCY_DIV)
 from dash import html, dcc
 
 dash.register_page(__name__, path='/')
@@ -68,7 +70,7 @@ def layout():
 
             dbc.Col([html.Div([
                 dcc.Input(
-                    id='emg-sample-freq',
+                    id=EMG_SAMPLING_FREQUENCY,
                     type="number",
                     placeholder="EMG sampling frequency",
                     value=2048
@@ -95,7 +97,7 @@ def layout():
 
 
                  dcc.Input(
-                     id='ventilator-sample-freq',
+                     id=VENT_SAMPLING_FREQUENCY,
                      type="number",
                      placeholder="Ventilator sampling frequency",
                      value=100
@@ -108,13 +110,8 @@ def layout():
                 html.Div('Ventilator sampling frequency', style={'textAlign': 'left'})
             ], width=2),
         ]),
-        html.Div(children=[
-            html.H1(id='out', children='')
-        ]),
         # the following elements are only needed
         # to provide outputs to the callbacks
-        html.Div(id='emg-uploaded-div'),
-        html.Div(id='ventilator-uploaded-div'),
-        html.Div(id='emg-frequency-div'),
-        html.Div(id='ventilator-frequency-div'),
+        html.Div(id=EMG_FREQUENCY_DIV),
+        html.Div(id=VENT_FREQUENCY_DIV)
     ])

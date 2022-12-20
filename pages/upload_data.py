@@ -6,7 +6,7 @@ from definitions import (PATH_BTN, FILE_PATH_INPUT, STORED_CWD, CWD,
                          CWD_FILES, CONFIRM_CENTERED, MODAL_CENTERED,
                          EMG_OPEN_CENTERED, VENT_OPEN_CENTERED, PARENT_DIR,
                          EMG_SAMPLING_FREQUENCY, VENT_SAMPLING_FREQUENCY,
-                         VENT_FREQUENCY_DIV, EMG_FREQUENCY_DIV)
+                         VENT_FREQUENCY_DIV, EMG_FREQUENCY_DIV, VENT_FILE_UPDATED, EMG_FILE_UPDATED)
 from dash import html, dcc
 
 dash.register_page(__name__, path='/')
@@ -30,11 +30,11 @@ modal_dialog = html.Div(
                         html.P()
                     ]),
                     dbc.Row([
-                            dcc.Store(id=STORED_CWD, data=os.getcwd()),
-                            html.H5(html.B(html.A("⬆️ Parent directory", href='#', id=PARENT_DIR))),
-                            html.H3([html.Code(os.getcwd(), id=CWD)]),
-                            html.Br(), html.Br(),
-                            html.Div(id=CWD_FILES)
+                        dcc.Store(id=STORED_CWD, data=os.getcwd()),
+                        html.H5(html.B(html.A("⬆️ Parent directory", href='#', id=PARENT_DIR))),
+                        html.H3([html.Code(os.getcwd(), id=CWD)]),
+                        html.Br(), html.Br(),
+                        html.Div(id=CWD_FILES)
                     ])]),
                 dbc.ModalFooter(
                     dbc.Button(
@@ -82,6 +82,8 @@ def layout():
             dbc.Col([
                 html.Div('EMG sampling frequency', style={'textAlign': 'left'})
             ], width=2),
+            html.P(),
+            html.Div(id=EMG_FILE_UPDATED),
         ]),
 
         dbc.Row([html.P()]),
@@ -95,13 +97,12 @@ def layout():
 
             dbc.Col([html.Div([
 
-
-                 dcc.Input(
-                     id=VENT_SAMPLING_FREQUENCY,
-                     type="number",
-                     placeholder="Ventilator sampling frequency",
-                     value=100
-                 ),
+                dcc.Input(
+                    id=VENT_SAMPLING_FREQUENCY,
+                    type="number",
+                    placeholder="Ventilator sampling frequency",
+                    value=100
+                ),
             ],
                 style={'textAlign': 'right'}),
             ], width=2),
@@ -109,6 +110,8 @@ def layout():
             dbc.Col([
                 html.Div('Ventilator sampling frequency', style={'textAlign': 'left'})
             ], width=2),
+            html.P(),
+            html.Div(id=VENT_FILE_UPDATED),
         ]),
         # the following elements are only needed
         # to provide outputs to the callbacks

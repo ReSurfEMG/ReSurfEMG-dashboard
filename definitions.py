@@ -58,3 +58,11 @@ VENT_FILE_UPDATED = 'ventilator-file-updated'
 VENT_FREQUENCY_DIV = 'ventilator-frequency-div'
 VENT_OPEN_CENTERED = 'open-centered-vent'
 VENT_SAMPLING_FREQUENCY = 'ventilator-sample-freq'
+
+
+# FEATURES PAGE
+EMG_FILENAME_FEATURES = 'emg-filename-features'
+LOAD_FEATURES_DIV = 'load-features-div'
+FEATURES_EMG_GRAPH = 'features-emg-graph'
+FEATURES_EMG_GRAPH_DIV = 'features-emg-graph-div'
+FEATURES_SELECT_LEAD = 'features-select-lead'

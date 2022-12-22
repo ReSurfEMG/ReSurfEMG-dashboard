@@ -38,7 +38,7 @@ def add_emg_graphs(emg_data, frequency, titles=None, default_processed=None):
     show_legend = False
 
     if emg_data.ndim == 1:
-        leads_n = 0
+        leads_n = 1
         time_array = get_time_array(emg_data.shape[0], frequency)
         if default_processed is not None:
             time_array_processed = get_time_array(default_processed.shape[0], frequency)
@@ -52,7 +52,7 @@ def add_emg_graphs(emg_data, frequency, titles=None, default_processed=None):
 
         uid = 'emg' + str(i) + '-graph' + str(uuid4())
 
-        if leads_n == 0:
+        if leads_n == 1:
             y = emg_data
             if default_processed is not None:
                 y_default_process = default_processed

@@ -31,12 +31,32 @@ class GatingMethod(Enum):
     RUNNING_AVERAGE_RMS = '3'
 
 
+# default values for preprocessing
 default_bandpass_low = 3
 default_bandpass_high = 450
 default_first_cut_percentage = 3
 default_first_cut_tolerance = 5
 default_ecg_removal_value = EcgRemovalMethods.ICA
-default_envelope_value = EnvelopeMethod.RMS
+default_envelope_value = EnvelopeMethod.FILTERING
+
+
+class ComputedFeatures:
+    BREATHS_COUNT = 'BREATHS COUNT'
+    MAX_AMPLITUDE = 'MAX AMPLITUDE'
+    BASELINE_AMPLITUDE = 'BASELINE AMPLITUDE'
+    TONIC_AMPLITUDE = 'TONIC AMPLITUDE'
+    AUC = 'AUC'
+    RISE_TIME = 'RISE TIME'
+    ACTIVITY_DURATION = 'ACTIVITY DURATION'
+
+    # list of computed features
+    features_list = [BREATHS_COUNT,
+                     MAX_AMPLITUDE,
+                     BASELINE_AMPLITUDE,
+                     TONIC_AMPLITUDE,
+                     AUC,
+                     RISE_TIME,
+                     ACTIVITY_DURATION]
 
 # IDs for graphical elements
 
@@ -59,12 +79,13 @@ VENT_FREQUENCY_DIV = 'ventilator-frequency-div'
 VENT_OPEN_CENTERED = 'open-centered-vent'
 VENT_SAMPLING_FREQUENCY = 'ventilator-sample-freq'
 
-
 # FEATURES PAGE
 EMG_FILENAME_FEATURES = 'emg-filename-features'
 LOAD_FEATURES_DIV = 'load-features-div'
+FEATURES_COMPUTE_BTN = 'features-compute-btn'
 FEATURES_EMG_GRAPH = 'features-emg-graph'
 FEATURES_EMG_GRAPH_DIV = 'features-emg-graph-div'
+FEATURES_LOADING = 'features-loading'
 FEATURES_SELECT_LEAD = 'features-select-lead'
 FEATURES_SELECT_COMPUTATION = 'features-select-computation'
 FEATURES_TABLE = 'features-table'

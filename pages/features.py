@@ -1,11 +1,11 @@
 import dash
 import dash_bootstrap_components as dbc
 from dash import html, dcc, dash_table
-from definitions import (FEATURES_SELECT_LEAD)
+from definitions import (ComputedFeatures, FEATURES_COMPUTE_BTN, FEATURES_LOADING)
 
 from definitions import (EMG_FILENAME_FEATURES, FEATURES_EMG_GRAPH_DIV,
-                         LOAD_FEATURES_DIV, FEATURES_SELECT_COMPUTATION,
-                         FEATURES_TABLE)
+                         LOAD_FEATURES_DIV, FEATURES_SELECT_LEAD,
+                         FEATURES_SELECT_COMPUTATION, FEATURES_TABLE)
 
 dash.register_page(__name__, path='/features')
 
@@ -47,6 +47,26 @@ layout = html.Div([
         ])
     ]),
     dbc.Row([
+        html.Div([
+            html.Button(
+                className="fas fa-play",
+                id=FEATURES_COMPUTE_BTN,
+                style={'color': 'green',
+                       'background': 'transparent',
+                       'border': 'none',
+                       'font-size': '34px'}
+            ),
+            dbc.Label("Compute features"),
+            dbc.Tooltip(
+                "Compute features",
+                id="tooltip-apply-pipeline",
+                target="apply-pipeline-btn",
+            )
+        ],
+            style={'text-align': 'center'}
+        ),
+    ]),
+    dbc.Row([
         html.P(),
         html.Hr(), html.Br(), html.Br(), html.Br(),
         html.H1('Computed features', style={'textAlign': 'center'})
@@ -57,20 +77,22 @@ layout = html.Div([
             select_computation_card
         ], width=2),
         dbc.Col([
-            dash_table.DataTable(
-                [{'MAX AMPLITUDE': '',
-                  'BASELINE APLITUDE': '',
-                  'TONIC AMPLITUDE': '',
-                  'AUC': '',
-                  'RISE TIME': '',
-                  'ACTIVITY DURATION': ''}],
-                style_table={'overflowX': 'auto'},
-                style_cell={
-                    # all three widths are needed
-                    'minWidth': '10%', 'width': '10%', 'maxWidth': '10%',
-                },
-                id=FEATURES_TABLE
+            dcc.Loading(
+                id=FEATURES_LOADING,
+                type="default",
+                children=dash_table.DataTable(
+                    [{feature: '' for feature in ComputedFeatures.features_list}],
+                    style_table={'overflowX': 'auto'},
+                    style_cell={
+                        # all three widths are needed
+                        'minWidth': '10%', 'width': '10%', 'maxWidth': '10%',
+                    },
+                    style_header={'textAlign': 'center'},
+                    id=FEATURES_TABLE
+                )
             )
-        ])
+        ],
+            style={'textAlign': 'center',
+                   'margin-left': '0px'})
     ]),
 ])

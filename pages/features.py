@@ -1,11 +1,14 @@
 import dash
 import dash_bootstrap_components as dbc
 from dash import html, dcc, dash_table
-from definitions import (ComputedFeatures, FEATURES_COMPUTE_BTN, FEATURES_LOADING)
-
-from definitions import (EMG_FILENAME_FEATURES, FEATURES_EMG_GRAPH_DIV,
+from definitions import (ComputedFeatures, BreathSelectionMethod, default_breath_method)
+from definitions import (EMG_FILENAME_FEATURES, FEATURES_COMPUTE_BTN,
+                         FEATURES_EMG_GRAPH_DIV, FEATURES_DOWNLOAD_BTN,
+                         FEATURES_DOWNLOAD_DCC, FEATURES_DOWNLOAD_TOOLTIP,
+                         FEATURES_COMPUTE_TOOLTIP, FEATURES_LOADING,
                          LOAD_FEATURES_DIV, FEATURES_SELECT_LEAD,
                          FEATURES_SELECT_COMPUTATION, FEATURES_TABLE)
+
 
 dash.register_page(__name__, path='/features')
 
@@ -27,8 +30,9 @@ select_computation_card = dbc.Card([
         dbc.Select(
             id=FEATURES_SELECT_COMPUTATION,
             options=[
-                {"label": "Entropy", "value": 1},
-            ]
+                {"label": "Entropy", "value": BreathSelectionMethod.ENTROPY},
+            ],
+            value=default_breath_method
         )
     ])
 ])
@@ -38,13 +42,13 @@ layout = html.Div([
     html.Div(id=EMG_FILENAME_FEATURES),
     html.Div(id=LOAD_FEATURES_DIV),
     dbc.Row([
+        html.P(),
         dbc.Col([
-            html.P(),
             select_lead_card
         ], width=2),
         dbc.Col([
             html.Div(id=FEATURES_EMG_GRAPH_DIV)
-        ])
+        ], width=10)
     ]),
     dbc.Row([
         html.Div([
@@ -56,15 +60,18 @@ layout = html.Div([
                        'border': 'none',
                        'font-size': '34px'}
             ),
-            dbc.Label("Compute features"),
             dbc.Tooltip(
                 "Compute features",
-                id="tooltip-apply-pipeline",
-                target="apply-pipeline-btn",
+                id=FEATURES_COMPUTE_TOOLTIP,
+                target=FEATURES_COMPUTE_BTN,
             )
         ],
             style={'text-align': 'center'}
         ),
+        html.Div([
+            dbc.Label("Compute features")
+        ],
+            style={'text-align': 'center'})
     ]),
     dbc.Row([
         html.P(),
@@ -73,7 +80,6 @@ layout = html.Div([
     ]),
     dbc.Row([
         dbc.Col([
-            html.P(),
             select_computation_card
         ], width=2),
         dbc.Col([
@@ -86,6 +92,7 @@ layout = html.Div([
                     style_cell={
                         # all three widths are needed
                         'minWidth': '10%', 'width': '10%', 'maxWidth': '10%',
+                        'textAlign': 'center'
                     },
                     style_header={'textAlign': 'center'},
                     id=FEATURES_TABLE
@@ -95,4 +102,27 @@ layout = html.Div([
             style={'textAlign': 'center',
                    'margin-left': '0px'})
     ]),
+    dbc.Row([
+        html.Div([
+            html.Button(
+                className="fas fa-download",
+                id=FEATURES_DOWNLOAD_BTN,
+                style={'color': 'blue',
+                       'background': 'transparent',
+                       'border': 'none',
+                       'font-size': '34px'}
+            ),
+            dbc.Tooltip(
+                "Download features",
+                id=FEATURES_DOWNLOAD_TOOLTIP,
+                target=FEATURES_DOWNLOAD_BTN,
+            ),
+        ],
+            style={'text-align': 'center'}),
+        html.Div([
+            dbc.Label("Download features")
+        ],
+            style={'text-align': 'center'})
+    ]),
+    dcc.Download(id=FEATURES_DOWNLOAD_DCC),
 ])

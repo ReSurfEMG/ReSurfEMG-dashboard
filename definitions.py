@@ -31,6 +31,10 @@ class GatingMethod(Enum):
     RUNNING_AVERAGE_RMS = '3'
 
 
+class BreathSelectionMethod(Enum):
+    ENTROPY = '1'
+
+
 # default values for preprocessing
 default_bandpass_low = 3
 default_bandpass_high = 450
@@ -38,6 +42,10 @@ default_first_cut_percentage = 3
 default_first_cut_tolerance = 5
 default_ecg_removal_value = EcgRemovalMethods.ICA
 default_envelope_value = EnvelopeMethod.FILTERING
+
+
+# default values for features extraction
+default_breath_method = BreathSelectionMethod.ENTROPY
 
 
 class ComputedFeatures:
@@ -83,6 +91,10 @@ VENT_SAMPLING_FREQUENCY = 'ventilator-sample-freq'
 EMG_FILENAME_FEATURES = 'emg-filename-features'
 LOAD_FEATURES_DIV = 'load-features-div'
 FEATURES_COMPUTE_BTN = 'features-compute-btn'
+FEATURES_COMPUTE_TOOLTIP = 'features-compute-tooltip'
+FEATURES_DOWNLOAD_BTN = 'features-download-btn'
+FEATURES_DOWNLOAD_DCC = 'features-download-dcc'
+FEATURES_DOWNLOAD_TOOLTIP = 'features-download-tooltip'
 FEATURES_EMG_GRAPH = 'features-emg-graph'
 FEATURES_EMG_GRAPH_DIV = 'features-emg-graph-div'
 FEATURES_LOADING = 'features-loading'

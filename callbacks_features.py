@@ -4,13 +4,16 @@ from dash import Input, Output, callback, dcc, ctx, State, html, ALL, callback_c
 from app import app, variables
 from resurfemg import helper_functions as hf
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 import utils
 from pathlib import Path
 from dash.exceptions import PreventUpdate
-from definitions import ComputedFeatures, FEATURES_COMPUTE_BTN
+from definitions import ComputedFeatures, FEATURES_COMPUTE_BTN, FEATURES_DOWNLOAD_BTN, FEATURES_DOWNLOAD_DCC
 from definitions import (EMG_FILENAME_FEATURES, FEATURES_EMG_GRAPH, FEATURES_EMG_GRAPH_DIV,
                          FEATURES_SELECT_LEAD, LOAD_FEATURES_DIV, FEATURES_TABLE, FEATURES_SELECT_COMPUTATION)
+
+features_df = None
 
 
 class Breath:
@@ -19,7 +22,6 @@ class Breath:
                  start_sample: int = None,
                  stop_sample: int = None,
                  amplitude: np.array = None):
-
         self.start_sample = start_sample
         self.stop_sample = stop_sample
         self.amplitude = amplitude
@@ -82,9 +84,12 @@ def show_graph(slidebar_stat, method_stat, lead_n, figure, method_input, btn_inp
     When the slide bar is updated by the user, or the computation method is changed
     computes the features and updates the table
     """
-    
+
+    global features_df
+
     data = variables.get_emg_processed()
-    time_array = utils.get_time_array(data[int(lead_n)].shape[0], variables.get_emg_freq())
+    frequency = variables.get_emg_freq()
+    time_array = utils.get_time_array(data[int(lead_n)].shape[0], frequency)
 
     if slidebar_stat is None or 'xaxis.range' not in slidebar_stat:
         start_sample = 0
@@ -95,25 +100,32 @@ def show_graph(slidebar_stat, method_stat, lead_n, figure, method_input, btn_inp
 
     breaths = get_breaths(data[int(lead_n)], start_sample, stop_sample, 1)
 
+    features_df = create_features_dataframe(breaths)
+
     features = [{ComputedFeatures.BREATHS_COUNT: len(breaths),
-                 ComputedFeatures.MAX_AMPLITUDE: '',
+                 ComputedFeatures.MAX_AMPLITUDE: str(round(features_df['maxima'].mean(), 2)) + ' ± ' + str(
+                     round(features_df['maxima'].std(), 2)),
                  ComputedFeatures.BASELINE_AMPLITUDE: '',
                  ComputedFeatures.TONIC_AMPLITUDE: '',
-                 ComputedFeatures.AUC: '',
+                 ComputedFeatures.AUC: str(round(features_df['auc'].mean(), 2)) + ' ± ' + str(
+                     round(features_df['auc'].std(), 2)),
                  ComputedFeatures.RISE_TIME: '',
-                 ComputedFeatures.ACTIVITY_DURATION: ''}]
-    #
-    # figure['data'].append({
-    #     'x': time_array[200:],
-    #     'y': tmp,
-    #     'type': 'scatter',
-    #     'mode': 'lines',
-    #     'name': 'a_level'
-    # })
-    #
-    # figure_updated = figure
+                 ComputedFeatures.ACTIVITY_DURATION: str(round(features_df['length'].mean(), 2)) + ' ± ' + str(
+                     round(features_df['length'].std(), 2)), }]
 
     return features
+
+
+# download the csv file with the features
+@callback(Output(FEATURES_DOWNLOAD_DCC, 'data'),
+          Input(FEATURES_DOWNLOAD_BTN, 'n_clicks'),
+          prevent_initial_call=True)
+def download_data(click):
+    global features_df
+
+    if features_df is not None:
+        features_file = dcc.send_data_frame(features_df.to_csv, 'features.csv')
+        return features_file
 
 
 def get_slider_graph(emg: np.array, time: np.array):
@@ -206,22 +218,92 @@ def get_breaths(emg: np.array, start_sample: int, stop_sample: int, method: int)
     for seven_range in keep:
         seven_line[seven_range.to_slice()] = 7
 
+    breaths = [Breath(start_sample=int(keep[i].start),
+                      stop_sample=int(keep[i + 1].start),
+                      amplitude=emg[int(keep[i].start):int(keep[i + 1].start)])
+               for i, element in enumerate(keep[:-1])]
 
-    zippy = zip(seven_line, seven_line[1:])
-    breath_indeces = []
-    for val in enumerate(zippy):
-        if val[1][0] < val[1][1]:
-            breath_indeces.append(val[0])
+    return breaths
 
-        grouped_breaths = np.split(emg[start_sample:stop_sample], breath_indeces)
-        grouped_entropy = np.split(rms_rolled, breath_indeces)
-        grouped_breaths = grouped_breaths[1:]
-        grouped_entropy = grouped_entropy[1:]
 
-    return grouped_breaths
+def get_breaths_length(breaths: List[Breath]) -> List[int]:
+    """
+    Computes and returns the numpy array containing the length of each breath
+    of the breaths list
+        Args:
+            breaths: list of the breaths
+
+    """
+    length = [(breath.stop_sample - breath.start_sample) for breath in breaths]
+
+    return length
+
+
+def get_breaths_maxima(breaths: List[Breath]) -> List[int]:
+    """
+    Computes and returns the numpy array containing the maximum
+    of each breath of the breaths list
+        Args:
+            breaths: list of the breaths
+
+    """
+    maxima = [hf.find_peak_in_breath(abs(breath.amplitude), 0, len(breath.amplitude))[1]
+              for breath in breaths]
+
+    return maxima
+
+
+def get_breaths_auc(breaths: List[Breath]) -> List[float]:
+    """
+    Computes and returns the numpy array containing the area under the curve
+    of each breath of the breaths list
+        Args:
+            breaths: list of the breaths
+
+    """
+
+    auc = [hf.area_under_curve(
+        abs(breath.amplitude),
+        0,
+        (len(breath.amplitude) - 1),
+        end_curve=70,
+        smooth_algorithm='mid_savgol'
+    )
+        for breath in breaths]
+
+    return auc
+
+
+def create_features_dataframe(breaths: List[Breath]) -> pd.DataFrame:
+    """
+    Computes and returns the numpy array containing the area under the curve
+    of each breath of the breaths list
+        Args:
+            breaths: list of the breaths
+    """
+    start_samples = []
+    stop_samples = []
+    for breath in breaths:
+        start_samples.append(breath.start_sample)
+        stop_samples.append(breath.stop_sample)
+
+    length = get_breaths_length(breaths)
+    maxima = get_breaths_maxima(breaths)
+    auc = get_breaths_auc(breaths)
+
+    d = {'start_samples': start_samples,
+         'stop_samples': stop_samples,
+         'length': length,
+         'maxima': maxima,
+         'auc': auc}
+
+    df = pd.DataFrame(d)
+
+    df.index.name = 'breath_number'
+
+    return df
 
 
 def sliceIterator(lst, sliceLen):
     for i in range(len(lst) - sliceLen + 1):
         yield lst[i:i + sliceLen]
-

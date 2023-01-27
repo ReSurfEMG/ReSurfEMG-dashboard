@@ -1,6 +1,7 @@
 # ReSurfEMG-dashboard
 
 Dashboard to use the ReSurfEMG library
+[![DOI](https://zenodo.org/badge/516740721.svg)](https://zenodo.org/badge/latestdoi/516740721)
 
 ## Getting started
 

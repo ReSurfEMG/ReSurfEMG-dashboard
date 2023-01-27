@@ -1,0 +1,34 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: ReSurfEMG-dashboard
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Walter
+    family-names: Baccinelli
+    email: w.baccinelli@esciencecenter.nl
+    affiliation: Netherlands eScience Center
+    orcid: 'https://orcid.org/0000-0001-8888-4792'
+  - given-names: Candace Makeda
+    family-names: Moore
+    name-particle: Candace
+    email: c.moore@esciencecenter.nl
+    affiliation: Netherlands eScience Center
+    orcid: 'https://orcid.org/0000-0003-1672-7565'
+
+keywords:
+  - EMG
+  - respiratory
+  - Python
+  - surface EMG
+  - GUI
+license: Apache-2.0
+
+repository-code: "https://github.com/ReSurfEMG/ReSurfEMG-dashboard"
+title: "ReSurfEMG-dashboard"
+version: "0.0.1"
+date-released: 20/01/2023

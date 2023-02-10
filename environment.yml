@@ -19,5 +19,4 @@ dependencies:
 
   - pip:
     - git+https://github.com/ReSurfEMG/ReSurfEMG.git@main
-    - dash-uploader==0.6.0
 

@@ -100,18 +100,19 @@ def show_graph(slidebar_stat, method_stat, lead_n, figure, method_input, btn_inp
 
     breaths = get_breaths(data[int(lead_n)], start_sample, stop_sample, 1)
 
-    features_df = create_features_dataframe(breaths)
+    features_df = create_features_dataframe(breaths, frequency)
 
     features = [{ComputedFeatures.BREATHS_COUNT: len(breaths),
                  ComputedFeatures.MAX_AMPLITUDE: str(round(features_df['maxima'].mean(), 2)) + ' ± ' + str(
                      round(features_df['maxima'].std(), 2)),
-                 ComputedFeatures.BASELINE_AMPLITUDE: '',
-                 ComputedFeatures.TONIC_AMPLITUDE: '',
                  ComputedFeatures.AUC: str(round(features_df['auc'].mean(), 2)) + ' ± ' + str(
                      round(features_df['auc'].std(), 2)),
-                 ComputedFeatures.RISE_TIME: '',
+                 ComputedFeatures.RISE_TIME: str(round(features_df['rise_time'].mean(), 2)) + ' ± ' + str(
+                     round(features_df['rise_time'].std(), 2)),
                  ComputedFeatures.ACTIVITY_DURATION: str(round(features_df['length'].mean(), 2)) + ' ± ' + str(
-                     round(features_df['length'].std(), 2)), }]
+                     round(features_df['length'].std(), 2)),
+                 ComputedFeatures.PEAK_POSITION: str(round(features_df['peak_position'].mean(), 2)) + ' ± ' + str(
+                     round(features_df['peak_position'].std(), 2))}]
 
     return features
 
@@ -197,7 +198,7 @@ def get_breaths(emg: np.array, start_sample: int, stop_sample: int, method: int)
     slice_length = 100
 
     index_hold = []
-    for slice in sliceIterator(big_list, slice_length):
+    for slice in slice_iterator(big_list, slice_length):
         entropy_index = hf.entropical(slice)
         index_hold.append(entropy_index)
 
@@ -218,9 +219,9 @@ def get_breaths(emg: np.array, start_sample: int, stop_sample: int, method: int)
     for seven_range in keep:
         seven_line[seven_range.to_slice()] = 7
 
-    breaths = [Breath(start_sample=int(keep[i].start),
-                      stop_sample=int(keep[i + 1].start),
-                      amplitude=emg[int(keep[i].start):int(keep[i + 1].start)])
+    breaths = [Breath(start_sample=int(keep[i].start+start_sample),
+                      stop_sample=int(keep[i + 1].start+start_sample),
+                      amplitude=emg[int(keep[i].start+start_sample):int(keep[i + 1].start+start_sample)])
                for i, element in enumerate(keep[:-1])]
 
     return breaths
@@ -274,12 +275,52 @@ def get_breaths_auc(breaths: List[Breath]) -> List[float]:
     return auc
 
 
-def create_features_dataframe(breaths: List[Breath]) -> pd.DataFrame:
+def get_breaths_rise_time(breaths: List[Breath], sampling_frequency: int) -> List[float]:
     """
-    Computes and returns the numpy array containing the area under the curve
+    Computes and returns the numpy array containing the rise time in milliseconds
     of each breath of the breaths list
         Args:
             breaths: list of the breaths
+            sampling_frequency: sampling frequency of the EMG
+    """
+    samples_to_milliseconds = sampling_frequency/1000
+    rise_times = [
+        hf.times_under_curve(
+            breath.amplitude,
+            0,
+            (len(breath.amplitude) - 1))[0]/samples_to_milliseconds
+        for breath in breaths
+
+    ]
+
+    return rise_times
+
+
+def get_breaths_peak_position(breaths: List[Breath]) -> List[float]:
+    """
+    Computes and returns the numpy array containing the rise time
+    of each breath of the breaths list
+        Args:
+            breaths: list of the breaths
+    """
+    rise_times = [
+        hf.times_under_curve(
+            breath.amplitude,
+            0,
+            (len(breath.amplitude) - 1))[1]*100
+        for breath in breaths
+
+    ]
+
+    return rise_times
+
+
+def create_features_dataframe(breaths: List[Breath], sampling_frequency: int) -> pd.DataFrame:
+    """
+    creates the pandas dataframe containing all the computed features
+        Args:
+            breaths: list of the breaths
+            sampling_frequency: sampling frequency of the EMG
     """
     start_samples = []
     stop_samples = []
@@ -290,12 +331,16 @@ def create_features_dataframe(breaths: List[Breath]) -> pd.DataFrame:
     length = get_breaths_length(breaths)
     maxima = get_breaths_maxima(breaths)
     auc = get_breaths_auc(breaths)
+    rise_times = get_breaths_rise_time(breaths, sampling_frequency=sampling_frequency)
+    peak_position = get_breaths_peak_position(breaths)
 
     d = {'start_samples': start_samples,
          'stop_samples': stop_samples,
          'length': length,
          'maxima': maxima,
-         'auc': auc}
+         'auc': auc,
+         'rise_time': rise_times,
+         'peak_position': peak_position}
 
     df = pd.DataFrame(d)
 
@@ -304,6 +349,6 @@ def create_features_dataframe(breaths: List[Breath]) -> pd.DataFrame:
     return df
 
 
-def sliceIterator(lst, sliceLen):
+def slice_iterator(lst, sliceLen):
     for i in range(len(lst) - sliceLen + 1):
         yield lst[i:i + sliceLen]

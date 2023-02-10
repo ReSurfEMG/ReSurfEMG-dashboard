@@ -54,17 +54,17 @@ class ComputedFeatures:
     BASELINE_AMPLITUDE = 'BASELINE AMPLITUDE'
     TONIC_AMPLITUDE = 'TONIC AMPLITUDE'
     AUC = 'AUC'
-    RISE_TIME = 'RISE TIME'
-    ACTIVITY_DURATION = 'ACTIVITY DURATION'
+    RISE_TIME = 'RISE TIME [ms]'
+    ACTIVITY_DURATION = 'ACTIVITY DURATION [ms]'
+    PEAK_POSITION = 'PEAK POSITION [%]'
 
     # list of computed features
     features_list = [BREATHS_COUNT,
                      MAX_AMPLITUDE,
-                     BASELINE_AMPLITUDE,
-                     TONIC_AMPLITUDE,
                      AUC,
                      RISE_TIME,
-                     ACTIVITY_DURATION]
+                     ACTIVITY_DURATION,
+                     PEAK_POSITION]
 
 # IDs for graphical elements
 

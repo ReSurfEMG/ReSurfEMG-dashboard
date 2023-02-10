@@ -1,5 +1,4 @@
 import dash
-import dash_uploader as du
 from dash import html, dcc
 
 

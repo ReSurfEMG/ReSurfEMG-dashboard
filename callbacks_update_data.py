@@ -1,3 +1,6 @@
+from typing import Any, Tuple
+
+import numpy as np
 import os
 from dash import Input, Output, callback, ctx, State, html, ALL, callback_context
 from app import app, variables
@@ -45,8 +48,9 @@ def toggle_modal(n1, n2, n3, is_open, selected_file, current_msg_emg, current_ms
         clicked_input_btn = ctx.triggered_id
 
     if ctx.triggered_id == CONFIRM_CENTERED:
-        try:
-            data = cv.poly5unpad(selected_file)
+        data = read_file(selected_file)
+
+        if data is not None:
             if clicked_input_btn == EMG_OPEN_CENTERED:
                 variables.set_emg(data)
                 variables.set_emg_filename('File: ' + selected_file)
@@ -55,7 +59,7 @@ def toggle_modal(n1, n2, n3, is_open, selected_file, current_msg_emg, current_ms
                 variables.set_ventilator(data)
                 variables.set_ventilator_filename('File: ' + selected_file)
                 message_vent = 'File correctly uploaded: ' + selected_file
-        except:
+        else:
             if clicked_input_btn == EMG_OPEN_CENTERED:
                 message_emg = 'The selected file is not valid'
             elif clicked_input_btn == VENT_OPEN_CENTERED:
@@ -125,3 +129,25 @@ def store_clicked_file(n_clicks, href, title, cwd):
         raise PreventUpdate
     index = ctx.triggered_id['index']
     return title[index]
+
+
+def read_file(file_path: str) -> np.ndarray:
+    """
+    Read the file specified in file_path and returns the file content.
+        Args:
+            file_path: the local path of the file
+        Returns:
+            A ndarray containing the leads, or None if the file is not valid
+    """
+    file_extension = os.path.splitext(file_path)[-1]
+    try:
+        if file_extension == '.Poly5':
+            data = cv.poly5unpad(file_path)
+        elif file_extension == '.npy':
+            data = np.load(file_path)
+        else:
+            raise Exception
+    except:
+        data = None
+
+    return data

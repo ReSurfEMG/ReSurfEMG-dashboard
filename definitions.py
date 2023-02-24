@@ -1,4 +1,6 @@
 from enum import Enum
+from app import variables
+
 
 FILE_IDENTIFIER = 'resurfemg_paramfile'
 
@@ -36,13 +38,14 @@ class BreathSelectionMethod(Enum):
 
 
 # default values for preprocessing
+sampling_freq = variables.get_emg_freq()
 default_bandpass_low = 3
 default_bandpass_high = 450
 default_first_cut_percentage = 3
 default_first_cut_tolerance = 5
+default_envelope_cut_frequency = 150
 default_ecg_removal_value = EcgRemovalMethods.ICA
 default_envelope_value = EnvelopeMethod.FILTERING
-
 
 # default values for features extraction
 default_breath_method = BreathSelectionMethod.ENTROPY
@@ -65,6 +68,7 @@ class ComputedFeatures:
                      RISE_TIME,
                      ACTIVITY_DURATION,
                      PEAK_POSITION]
+
 
 # IDs for graphical elements
 

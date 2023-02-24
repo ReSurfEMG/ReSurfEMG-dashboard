@@ -392,7 +392,9 @@ def get_envelope(envelope_method: int, emg_signal, sample_rate):
             emg_env = np.array([hf.full_rolling_rms(lead, int(sample_rate / 10)) for lead in abs(emg_signal)])
     elif envelope_method == EnvelopeMethod.FILTERING.value:
         # THIS SHOULD BE CHANGED TO LOW PASS!
-        emg_env = hf.emg_highpass_butter(abs(emg_signal), 150, sample_rate)
+        cut_frequency = check_default_cut_frequency(definitions.default_envelope_cut_frequency,
+                                                    sample_rate)
+        emg_env = hf.emg_highpass_butter(abs(emg_signal), cut_frequency, sample_rate)
     else:
         emg_env = emg_signal
 
@@ -575,3 +577,22 @@ def upload_additional_steps(params_file):
         core_body = core_body + [steps_body, html.P()]
 
     return core_body, card_counter_local
+
+
+def check_default_cut_frequency(default_frequency: int, sampling_rate: int) -> int:
+    # check compatibility of the base filter upper cut frequency
+    # if the sampling frequency is lower than twice the default value
+    # we need to adjust it
+
+    high_cut = default_frequency
+
+    if sampling_rate is None:
+        return default_frequency
+
+    if default_frequency > sampling_rate/2:
+        # -1 because the butter filter fails if the cut-off frequency
+        # is equal to half the sampling rate
+
+        high_cut = int(sampling_rate / 2) - 1
+
+    return high_cut

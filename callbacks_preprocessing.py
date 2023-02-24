@@ -9,7 +9,6 @@ from dash import Input, Output, State, callback, MATCH, ALL, html, ctx, dcc
 from definitions import ProcessTypology, EcgRemovalMethods, EnvelopeMethod, FILE_IDENTIFIER, GatingMethod
 from resurfemg import helper_functions as hf
 
-
 card_counter = 0
 json_parameters = []
 
@@ -17,6 +16,7 @@ json_parameters = []
 # on loading add the emg graphs
 @callback(Output('preprocessing-original-container', 'children'),
           Output('emg-filename-preprocessing', 'children'),
+          Output('base-filter-low', 'children'),
           Input('load-preprocessing-div', 'data'))
 def show_raw_data(data):
     global card_counter
@@ -25,12 +25,14 @@ def show_raw_data(data):
     emg_frequency = variables.get_emg_freq()
     filename = variables.get_emg_filename()
 
+    # compatibility of default high cut frequency
+    high_cut = check_default_cut_frequency(definitions.default_bandpass_high, emg_frequency)
+
     if emg_data is not None:
         children_emg = utils.add_emg_graphs(np.array(emg_data), emg_frequency)
     else:
         children_emg = []
-
-    return children_emg, filename
+    return children_emg, filename, high_cut
 
 
 # apply the processing on the button click
@@ -105,7 +107,8 @@ def show_data(click,
             gating_method_default = int(gating_method[gating_method_default_idx])
             json_parameters.append(utils.build_ecgfilt_params_json(4,
                                                                    EcgRemovalMethods(ecg_method),
-                                                                   GatingMethod(gating_method[gating_method_default_idx])))
+                                                                   GatingMethod(
+                                                                       gating_method[gating_method_default_idx])))
         else:
             gating_method_default = None
             json_parameters.append(utils.build_ecgfilt_params_json(4, EcgRemovalMethods(ecg_method)))
@@ -151,7 +154,7 @@ def show_data(click,
                 # json_parameters.append(utils.build_lowpass_params_json(n + 5, high_cut))
 
             elif step == ProcessTypology.ECG_REMOVAL.value:
-                idx = utils.get_idx_dict_list(additional_rem_idx, 'index', card_id)-1
+                idx = utils.get_idx_dict_list(additional_rem_idx, 'index', card_id) - 1
 
                 ecg_additional_method = additional_rem[idx]
                 if ecg_additional_method == EcgRemovalMethods.GATING.value:
@@ -180,7 +183,6 @@ def show_data(click,
                                                                sample_rate,
                                                                gating_method_type)
 
-
         # At the end, extract the envelope
         emg_env = utils.get_envelope(envelope_method, new_step_emg, sample_rate)
         json_parameters.append(utils.build_envelope_params_json(len(json_parameters) + 1,
@@ -199,7 +201,7 @@ def show_data(click,
         preprocessed_def = variables.get_emg_processed_default()
         if leads_displayed != preprocessed_def.shape[0]:
             # in case the dimension is different, the ecg lead is not included
-            preprocessed_def = preprocessed_def[1:leads_displayed+1, :]
+            preprocessed_def = preprocessed_def[1:leads_displayed + 1, :]
 
         children_emg = utils.add_emg_graphs(emg_env,
                                             sample_rate,
@@ -262,7 +264,7 @@ def add_step(click, close, confirm_upload, confirm_reset, params_file, previous_
         if confirm_upload:
             card_counter = 0
             updated_content, card_counter = utils.upload_additional_steps(params_file)
-        else: # if the operation is cancelled, do nothing
+        else:  # if the operation is cancelled, do nothing
             updated_content = previous_content
     # if the restore params button has been clicked
     elif id_ctx == 'confirm-reset':
@@ -289,7 +291,6 @@ def add_step(click, close, confirm_upload, confirm_reset, params_file, previous_
           State({"type": "additional-step-core", "index": MATCH}, "id"),
           prevent_initial_call=True)
 def get_body(selected_value, card_id):
-
     new_section = []
     if selected_value == ProcessTypology.BAND_PASS.value:
         new_section = utils.get_band_pass_layout({"type": "additional-step-low", "index": card_id['index']},
@@ -388,14 +389,14 @@ def populate_steps(confirm_upload, confirm_reset, params_file):
 
     if trigger_id == 'confirm-reset' and confirm_reset:
         bandpass_low = definitions.default_bandpass_low
-        bandpass_high = definitions.default_bandpass_high
+        bandpass_high = check_default_cut_frequency(definitions.default_bandpass_high,
+                                                    variables.get_emg_freq())
         first_cut_percentage = definitions.default_first_cut_percentage
         first_cut_tolerance = definitions.default_first_cut_tolerance
         ecg_removal_value = definitions.default_ecg_removal_value
         envelope_value = definitions.default_envelope_value
 
     if trigger_id == 'confirm-upload' and confirm_upload:
-
         data = utils.param_file_to_json(params_file)
 
         first_cut_percentage = data[1]['percentage']
@@ -428,3 +429,16 @@ def get_body(selected_value, container, id_origin):
                 container.remove(element)
         new_section = container
     return new_section
+
+
+def check_default_cut_frequency(default_frequency: int, sampling_rate: int) -> int:
+    # check compatibility of the base filter upper cut frequency
+    # if the sampling frequency is lower than twice the default value
+    # we need to adjust it
+
+    high_cut = default_frequency
+
+    if default_frequency > 2 * sampling_rate:
+        high_cut = int(sampling_rate / 2)
+
+    return high_cut

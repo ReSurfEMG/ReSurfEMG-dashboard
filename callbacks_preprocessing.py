@@ -16,7 +16,6 @@ json_parameters = []
 # on loading add the emg graphs
 @callback(Output('preprocessing-original-container', 'children'),
           Output('emg-filename-preprocessing', 'children'),
-          Output('base-filter-low', 'children'),
           Input('load-preprocessing-div', 'data'))
 def show_raw_data(data):
     global card_counter
@@ -25,14 +24,12 @@ def show_raw_data(data):
     emg_frequency = variables.get_emg_freq()
     filename = variables.get_emg_filename()
 
-    # compatibility of default high cut frequency
-    high_cut = check_default_cut_frequency(definitions.default_bandpass_high, emg_frequency)
-
     if emg_data is not None:
         children_emg = utils.add_emg_graphs(np.array(emg_data), emg_frequency)
     else:
         children_emg = []
-    return children_emg, filename, high_cut
+
+    return children_emg, filename
 
 
 # apply the processing on the button click
@@ -59,7 +56,7 @@ def show_data(click,
               cut_percent,
               cut_tolerance,
               low_freq,
-              high_freq,
+              high_freq_default,
               ecg_method,
               envelope_method,
               additional_card,
@@ -82,6 +79,9 @@ def show_data(click,
 
     emg_data = variables.get_emg()
     sample_rate = variables.get_emg_freq()
+
+    # we have to make sure that the cut-off frequencies are in an acceptable range
+    high_freq = utils.check_default_cut_frequency(high_freq_default, sample_rate)
 
     # if data have been loaded, apply the processing
     if emg_data is not None:
@@ -126,7 +126,8 @@ def show_data(click,
                 idx_high = utils.get_idx_dict_list(additional_high_idx, 'index', card_id)
 
                 low_cut = additional_low[idx_low]
-                high_cut = additional_high[idx_high]
+                high_cut_input = additional_high[idx_high]
+                high_cut = utils.check_default_cut_frequency(high_cut_input, sample_rate)
 
                 new_step_emg = hf.emg_bandpass_butter_sample(new_step_emg,
                                                              low_cut, high_cut,
@@ -147,7 +148,9 @@ def show_data(click,
 
             elif step == ProcessTypology.LOW_PASS.value:
                 idx = utils.get_idx_dict_list(additional_high_idx, 'index', card_id)
-                high_cut = additional_high[idx]
+
+                high_cut_input = additional_high[idx]
+                high_cut = utils.check_default_cut_frequency(high_cut_input, sample_rate)
 
                 # TODO: add function when it will be available in helper_functions
                 # new_step_emg = hf.emg_lowpass_butter(new_step_emg, low_cut, sample_rate)
@@ -383,14 +386,14 @@ def populate_steps(reset_button):
           Input('confirm-upload', 'submit_n_clicks'),
           Input('confirm-reset', 'submit_n_clicks'),
           State('upload-processing-params', 'contents'),
-          prevent_initial_call=True)
+          prevent_initial_call=False)
 def populate_steps(confirm_upload, confirm_reset, params_file):
     trigger_id = ctx.triggered_id
 
-    if trigger_id == 'confirm-reset' and confirm_reset:
+    if (trigger_id == 'confirm-reset' and confirm_reset) or trigger_id is None:
         bandpass_low = definitions.default_bandpass_low
-        bandpass_high = check_default_cut_frequency(definitions.default_bandpass_high,
-                                                    variables.get_emg_freq())
+        bandpass_high = utils.check_default_cut_frequency(definitions.default_bandpass_high,
+                                                          variables.get_emg_freq())
         first_cut_percentage = definitions.default_first_cut_percentage
         first_cut_tolerance = definitions.default_first_cut_tolerance
         ecg_removal_value = definitions.default_ecg_removal_value
@@ -410,7 +413,7 @@ def populate_steps(confirm_upload, confirm_reset, params_file):
         envelope = data[-1]['method']
         envelope_value = utils.get_envelope_method_value(envelope)
 
-    if confirm_reset or confirm_upload:
+    if confirm_reset or confirm_upload or trigger_id is None:
         return first_cut_percentage, first_cut_tolerance, bandpass_low, bandpass_high, ecg_removal_value, envelope_value
 
 
@@ -429,16 +432,3 @@ def get_body(selected_value, container, id_origin):
                 container.remove(element)
         new_section = container
     return new_section
-
-
-def check_default_cut_frequency(default_frequency: int, sampling_rate: int) -> int:
-    # check compatibility of the base filter upper cut frequency
-    # if the sampling frequency is lower than twice the default value
-    # we need to adjust it
-
-    high_cut = default_frequency
-
-    if default_frequency > 2 * sampling_rate:
-        high_cut = int(sampling_rate / 2)
-
-    return high_cut

@@ -31,6 +31,7 @@ select_computation_card = dbc.Card([
             id=FEATURES_SELECT_COMPUTATION,
             options=[
                 {"label": "Entropy", "value": BreathSelectionMethod.ENTROPY},
+                {"label": "Variability", "value": BreathSelectionMethod.ENTROPY},
             ],
             value=default_breath_method
         )

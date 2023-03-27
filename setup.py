@@ -518,7 +518,7 @@ if __name__ == '__main__':
         author_email='c.moore@esciencecenter.nl',
         package_dir={'.': '', },
         packages=[
-            'ReSurfEMG-dashboard',
+            'resurfemg-dashboard',
         ],
         url=project_url,
         license=project_license,

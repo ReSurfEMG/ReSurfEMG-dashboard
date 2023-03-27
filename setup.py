@@ -218,44 +218,6 @@ class Isort(TestCommand):
             ))
 
 
-class SphinxApiDoc(Command):
-
-    description = 'run apidoc to generate documentation'
-
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        from sphinx.ext.apidoc import main
-
-        src = os.path.join(project_dir, 'docs')
-        special = (
-            'index.rst',
-            'developers.rst',
-            'medical-professionals.rst',
-        )
-
-        for f in glob(os.path.join(src, '*.rst')):
-            for end in special:
-                if f.endswith(end):
-                    os.utime(f, None)
-                    break
-            else:
-                os.unlink(f)
-
-        sys.exit(main([
-            '-o', src,
-            '-f',
-            os.path.join(project_dir, 'resurfemg-dashboard'),
-            '--separate',
-        ]))
-
-
 class InstallDev(InstallCommand):
 
     def run(self):
@@ -556,7 +518,7 @@ if __name__ == '__main__':
         author_email='c.moore@esciencecenter.nl',
         package_dir={'.': '', },
         packages=[
-            'resurfemg-dashboard',
+            'ReSurfEMG-dashboard',
         ],
         url=project_url,
         license=project_license,
@@ -569,8 +531,6 @@ if __name__ == '__main__':
             'test': UnitTest,
             'lint': Pep8,
             'isort': Isort,
-            'apidoc': SphinxApiDoc,
-            'install_dev': InstallDev,
             'anaconda_upload': AnacondaUpload,
             'anaconda_gen_meta': GenerateCondaYaml,
             'bdist_conda': BdistConda,
@@ -579,24 +539,12 @@ if __name__ == '__main__':
         test_suite='setup.my_test_suite',
         install_requires=[
             'pyxdf',
-            'mne',
-            'textdistance',
             'pandas',
             'scipy',
             'matplotlib',
-            'h5py',
-            'sklearn',
         ],
         tests_require=['pytest', 'pycodestyle', 'isort', 'wheel'],
-        command_options={
-            'build_sphinx': {
-                'project': ('setup.py', name),
-                'version': ('setup.py', version),
-                'source_dir': ('setup.py', './docs'),
-                'config_dir': ('setup.py', './docs'),
-            },
-        },
-        setup_requires=['sphinx', 'wheel'],
+        setup_requires=['wheel'],
         extras_require={
             'dev': ['pytest', 'codestyle', 'isort', 'wheel'],
         },

@@ -554,16 +554,9 @@ if __name__ == '__main__':
         version=version,
         author='A team including the NLeSC and the U. of Twente',
         author_email='c.moore@esciencecenter.nl',
-        package_dir={'.': '', 'TMSiSDK': '.vendor/tmsisdk/TMSiSDK'},
+        package_dir={'.': '', },
         packages=[
-            'resurfemg',
-            'TMSiSDK',
-            'TMSiSDK.devices',
-            'TMSiSDK.devices.saga',
-            'TMSiSDK.file_formats',
-            'TMSiSDK.file_readers',
-            'TMSiSDK.filters',
-            'TMSiSDK.plotters',
+            'resurfemg-dashboard',
         ],
         url=project_url,
         license=project_license,
@@ -609,4 +602,3 @@ if __name__ == '__main__':
         },
         zip_safe=False,
     )
-

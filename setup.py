@@ -87,8 +87,10 @@ class TestCommand(Command):
         self.test_suite = True
 
     def sources(self):
+        import pdb
+        pdb.set_trace()
         return glob(
-            os.path.join(project_dir, 'resurfemg-dashboard', '**/*.py'),
+            os.path.join(project_dir, '**/*.py'),
             recursive=True,
         ) + [os.path.join(project_dir, 'setup.py')]
 

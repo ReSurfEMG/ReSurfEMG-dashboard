@@ -35,6 +35,7 @@ class GatingMethod(Enum):
 
 class BreathSelectionMethod(Enum):
     ENTROPY = '1'
+    VARIABILITY = '2'
 
 
 # default values for preprocessing

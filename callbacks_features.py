@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 import utils
 from pathlib import Path
 from dash.exceptions import PreventUpdate
-from definitions import ComputedFeatures, FEATURES_COMPUTE_BTN, FEATURES_DOWNLOAD_BTN, FEATURES_DOWNLOAD_DCC
+from definitions import ComputedFeatures, BreathSelectionMethod, FEATURES_COMPUTE_BTN, FEATURES_DOWNLOAD_BTN, FEATURES_DOWNLOAD_DCC
 from definitions import (EMG_FILENAME_FEATURES, FEATURES_EMG_GRAPH, FEATURES_EMG_GRAPH_DIV,
                          FEATURES_SELECT_LEAD, LOAD_FEATURES_DIV, FEATURES_TABLE, FEATURES_SELECT_COMPUTATION)
 
@@ -98,7 +98,7 @@ def show_graph(slidebar_stat, method_stat, lead_n, figure, method_input, btn_inp
         start_sample = (np.abs(time_array - slidebar_stat['xaxis.range'][0])).argmin()
         stop_sample = (np.abs(time_array - slidebar_stat['xaxis.range'][1])).argmin()
 
-    breaths = get_breaths(data[int(lead_n)], start_sample, stop_sample, 1)
+    breaths = get_breaths(data[int(lead_n)], start_sample, stop_sample, method_stat)
 
     features_df = create_features_dataframe(breaths, frequency)
 
@@ -184,7 +184,7 @@ def get_features_table(emg: np.array, start_sample: int, stop_sample: int):
     return []
 
 
-def get_breaths(emg: np.array, start_sample: int, stop_sample: int, method: int) -> List[Breath]:
+def get_breaths(emg: np.array, start_sample: int, stop_sample: int, method: str) -> List[Breath]:
     """
     Produces a list of breaths from the time window in the signal.
         Args:
@@ -197,15 +197,28 @@ def get_breaths(emg: np.array, start_sample: int, stop_sample: int, method: int)
     big_list = np.round_(emg[start_sample:stop_sample], decimals=5)
     slice_length = 100
 
-    index_hold = []
-    for slice in slice_iterator(big_list, slice_length):
-        entropy_index = hf.entropical(slice)
-        index_hold.append(entropy_index)
+    if method == BreathSelectionMethod.ENTROPY.value: 
+        index_hold = []
+        for slice in slice_iterator(big_list, slice_length):
+            entropy_index = hf.entropical(slice)
+            index_hold.append(entropy_index)
 
-    high_decision_cutoff = 0.9 * ((np.max(index_hold)) - (np.min(index_hold))) + np.min(index_hold)
-    decision_cutoff = 0.5 * ((np.max(index_hold)) - (np.min(index_hold))) + np.min(index_hold)
+        high_decision_cutoff = 0.9 * ((np.max(index_hold)) - (np.min(index_hold))) + np.min(index_hold)
+        decision_cutoff = 0.5 * ((np.max(index_hold)) - (np.min(index_hold))) + np.min(index_hold)
 
-    rms_rolled = hf.vect_naive_rolling_rms(index_hold, 100)  # so rms is rms entropy
+        rms_rolled = hf.vect_naive_rolling_rms(index_hold, 100)  # so rms is rms entropy
+
+    elif method == BreathSelectionMethod.VARIABILITY.value:
+        print("done")
+        index_hold = []
+        for slice in slice_iterator(big_list, slice_length):
+            variability_index = hf.variability_maker(slice, segment_size=slice_length, method='variance', fill_method='avg')             ,
+            index_hold.append(variability_index)
+
+        high_decision_cutoff = 0.5 * ((np.max(index_hold)) - (np.min(index_hold))) + np.min(index_hold)
+        decision_cutoff = 0.05 * ((np.max(index_hold)) - (np.min(index_hold))) + np.min(index_hold)
+
+        rms_rolled = hf.vect_naive_rolling_rms(index_hold, 100)  # so rms is rms variability
 
     hi = np.array(hf.zero_one_for_jumps_base(rms_rolled, high_decision_cutoff))
     lo = np.array(hf.zero_one_for_jumps_base(rms_rolled, decision_cutoff))
@@ -220,9 +233,9 @@ def get_breaths(emg: np.array, start_sample: int, stop_sample: int, method: int)
         seven_line[seven_range.to_slice()] = 7
 
     breaths = [Breath(start_sample=int(keep[i].start+start_sample),
-                      stop_sample=int(keep[i + 1].start+start_sample),
-                      amplitude=emg[int(keep[i].start+start_sample):int(keep[i + 1].start+start_sample)])
-               for i, element in enumerate(keep[:-1])]
+                    stop_sample=int(keep[i + 1].start+start_sample),
+                    amplitude=emg[int(keep[i].start+start_sample):int(keep[i + 1].start+start_sample)])
+            for i, element in enumerate(keep[:-1])]
 
     return breaths
 

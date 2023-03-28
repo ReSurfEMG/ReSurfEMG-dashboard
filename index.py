@@ -67,8 +67,6 @@ nav = dbc.Row(
             dbc.Col(dbc.NavLink("Preprocessing", href="/preprocessing",
                                 style={'font-size': '25px'})),
             dbc.Col(dbc.NavLink("Features", href="/features",
-                                style={'font-size': '25px'})),
-            dbc.Col(dbc.NavLink("Interpretation", href="/interpretation",
                                 style={'font-size': '25px'}))
         ],
         align='center',

@@ -29,3 +29,6 @@ If the process is successful, the resurfemg_dashboard.exe file can be found in t
 
 N.B. The dist folder containing the executable file should be created and uploaded when a new release of the dashboard is created.
 
+## Linting work you want to add
+
+Build the environment in the `environment_lint.yml` and enter it. You should then be able to use the `python setup.py lint` command. With care in the proper situation you may also use the `--fast` option. 

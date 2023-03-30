@@ -217,10 +217,9 @@ def get_breaths(emg: np.array, start_sample: int, stop_sample: int, method: str)
 
     elif method == BreathSelectionMethod.VARIABILITY.value:
         variability = hf.variability_maker(big_list, segment_size=slice_length, method='variance', fill_method='avg')
-        
         high_decision_cutoff = 0.5 * ((np.max(variability)) - (np.min(variability))) + np.min(variability)
         decision_cutoff = 0.05 * ((np.max(variability)) - (np.min(variability))) + np.min(variability)
-
+        
         rms_rolled = hf.vect_naive_rolling_rms(variability, 100)  # so rms is rms variability
 
     hi = np.array(hf.zero_one_for_jumps_base(rms_rolled, high_decision_cutoff))

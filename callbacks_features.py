@@ -216,16 +216,12 @@ def get_breaths(emg: np.array, start_sample: int, stop_sample: int, method: str)
         rms_rolled = hf.vect_naive_rolling_rms(index_hold, 100)  # so rms is rms entropy
 
     elif method == BreathSelectionMethod.VARIABILITY.value:
-        print("done")
-        index_hold = []
-        for slice in slice_iterator(big_list, slice_length):
-            variability_index = hf.variability_maker(slice, segment_size=slice_length, method='variance', fill_method='avg')             ,
-            index_hold.append(variability_index)
+        variability = hf.variability_maker(big_list, segment_size=slice_length, method='variance', fill_method='avg')
+        
+        high_decision_cutoff = 0.5 * ((np.max(variability)) - (np.min(variability))) + np.min(variability)
+        decision_cutoff = 0.05 * ((np.max(variability)) - (np.min(variability))) + np.min(variability)
 
-        high_decision_cutoff = 0.5 * ((np.max(index_hold)) - (np.min(index_hold))) + np.min(index_hold)
-        decision_cutoff = 0.05 * ((np.max(index_hold)) - (np.min(index_hold))) + np.min(index_hold)
-
-        rms_rolled = hf.vect_naive_rolling_rms(index_hold, 100)  # so rms is rms variability
+        rms_rolled = hf.vect_naive_rolling_rms(variability, 100)  # so rms is rms variability
 
     hi = np.array(hf.zero_one_for_jumps_base(rms_rolled, high_decision_cutoff))
     lo = np.array(hf.zero_one_for_jumps_base(rms_rolled, decision_cutoff))

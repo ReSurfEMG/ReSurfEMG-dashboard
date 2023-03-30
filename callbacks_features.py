@@ -216,7 +216,6 @@ def get_breaths(emg: np.array, start_sample: int, stop_sample: int, method: str)
         rms_rolled = hf.vect_naive_rolling_rms(index_hold, 100)  # so rms is rms entropy
 
     elif method == BreathSelectionMethod.VARIABILITY.value:
-        print("done")
         index_hold = []
         for slice in slice_iterator(big_list, slice_length):
             variability_index = hf.variability_maker(slice, segment_size=slice_length, method='variance', fill_method='avg')             ,

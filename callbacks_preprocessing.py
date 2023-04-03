@@ -393,7 +393,7 @@ def populate_steps(reset_button):
           Input('confirm-upload', 'submit_n_clicks'),
           Input('confirm-reset', 'submit_n_clicks'),
           State('upload-processing-params', 'contents'),
-          prevent_initial_call=False)
+          prevent_initial_call=True)
 def populate_steps(confirm_upload, confirm_reset, params_file):
     trigger_id = ctx.triggered_id
 

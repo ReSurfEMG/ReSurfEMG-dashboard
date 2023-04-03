@@ -98,12 +98,15 @@ def show_graph(slidebar_stat, method_stat, lead_n, figure, method_input, btn_inp
     frequency = variables.get_emg_freq()
     time_array = utils.get_time_array(data[int(lead_n)].shape[0], frequency)
 
-    if slidebar_stat is None or 'xaxis.range' not in slidebar_stat:
-        start_sample = 0
-        stop_sample = time_array.shape[0]
-    else:
+    if slidebar_stat is not None and 'xaxis.range' in slidebar_stat:
         start_sample = (np.abs(time_array - slidebar_stat['xaxis.range'][0])).argmin()
         stop_sample = (np.abs(time_array - slidebar_stat['xaxis.range'][1])).argmin()
+    elif slidebar_stat is not None and ('xaxis.range[0]' and 'xaxis.range[1]' in slidebar_stat):
+        start_sample = (np.abs(time_array - slidebar_stat['xaxis.range[0]'])).argmin()
+        stop_sample = (np.abs(time_array - slidebar_stat['xaxis.range[1]'])).argmin()
+    else:
+        start_sample = 0
+        stop_sample = time_array.shape[0]
 
     breaths = get_breaths(data[int(lead_n)], start_sample, stop_sample, method_stat)
 

@@ -37,8 +37,10 @@ select_computation_card = dbc.Card([
         dbc.Select(
             id=FEATURES_SELECT_COMPUTATION,
             options=[
-                {"label": "Entropy", "value": BreathSelectionMethod.ENTROPY},
-                {"label": "Variability", "value":BreathSelectionMethod.VARIABILITY},
+                {"label": "Variability", "value": BreathSelectionMethod.VARIABILITY},
+                {"label": "Shannon Entropy", "value": BreathSelectionMethod.SHANNON_ENTROPY},
+                {"label": "Fixed Sample Entropy", "value": BreathSelectionMethod.SAMPLE_ENTROPY},
+                {"label": "Logarithmic Remapping", "value": BreathSelectionMethod.LOG_REMAPPING},
             ],
             value=default_breath_method
         )

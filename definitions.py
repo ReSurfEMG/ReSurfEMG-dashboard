@@ -34,8 +34,10 @@ class GatingMethod(Enum):
 
 
 class BreathSelectionMethod(Enum):
-    ENTROPY = '1'
-    VARIABILITY = '2'
+    VARIABILITY = '1'
+    SHANNON_ENTROPY = '2'
+    SAMPLE_ENTROPY = '3'
+    LOG_REMAPPING = '4'
 
 
 # default values for preprocessing
@@ -49,7 +51,7 @@ default_ecg_removal_value = EcgRemovalMethods.ICA
 default_envelope_value = EnvelopeMethod.FILTERING
 
 # default values for features extraction
-default_breath_method = BreathSelectionMethod.ENTROPY
+default_breath_method = BreathSelectionMethod.VARIABILITY
 
 
 class ComputedFeatures:

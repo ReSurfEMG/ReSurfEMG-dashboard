@@ -207,7 +207,7 @@ def get_breaths(emg: np.array, start_sample: int, stop_sample: int, method: str)
     big_list = np.round_(emg[start_sample:stop_sample], decimals=5)
     slice_length = 100
 
-    if method == BreathSelectionMethod.ENTROPY.value: 
+    if method == BreathSelectionMethod.LOG_REMAPPING.value:
         index_hold = []
         for slice in slice_iterator(big_list, slice_length):
             entropy_index = hf.entropical(slice)
@@ -224,6 +224,32 @@ def get_breaths(emg: np.array, start_sample: int, stop_sample: int, method: str)
         decision_cutoff = 0.05 * ((np.max(variability)) - (np.min(variability))) + np.min(variability)
         
         rms_rolled = hf.vect_naive_rolling_rms(variability, 100)  # so rms is rms variability
+
+    elif method == BreathSelectionMethod.SHANNON_ENTROPY.value:
+        index_hold = []
+        for slice in slice_iterator(big_list, slice_length):
+            entropy_index = hf.entropy_maker(slice, method='scipy')
+            index_hold.append(entropy_index)
+
+        high_decision_cutoff = 0.9 * ((np.max(index_hold)) - (np.min(index_hold))) + np.min(index_hold)
+        decision_cutoff = 0.5 * ((np.max(index_hold)) - (np.min(index_hold))) + np.min(index_hold)
+
+        rms_rolled = hf.vect_naive_rolling_rms(index_hold, 100)  # so rms is rms entropy
+
+    elif method == BreathSelectionMethod.SAMPLE_ENTROPY.value:
+
+        tolerance = 0.3 * np.std(big_list)
+
+        # N.B. the window length is an empirical tradeoff between speed and quality of the results.
+        # It is not what is recommended in the literature
+        index_hold = [hf.sampen(big_list[int(i):int(i + 300)], emb_dim=1, tolerance=tolerance)
+                      for i in range(len(big_list)-300)]
+
+        # N.B. the cutoffs have still to be evaluated!
+        high_decision_cutoff = 0.9 * ((np.max(index_hold)) - (np.min(index_hold))) + np.min(index_hold)
+        decision_cutoff = 0.5 * ((np.max(index_hold)) - (np.min(index_hold))) + np.min(index_hold)
+
+        rms_rolled = hf.vect_naive_rolling_rms(index_hold, 100)  # so rms is rms entropy
 
     hi = np.array(hf.zero_one_for_jumps_base(rms_rolled, high_decision_cutoff))
     lo = np.array(hf.zero_one_for_jumps_base(rms_rolled, decision_cutoff))

@@ -238,12 +238,14 @@ def get_breaths(emg: np.array, start_sample: int, stop_sample: int, method: str)
 
     elif method == BreathSelectionMethod.SAMPLE_ENTROPY.value:
 
-        tolerance = 0.3 * np.std(big_list)
-
         # N.B. the window length is an empirical tradeoff between speed and quality of the results.
         # It is not what is recommended in the literature
-        index_hold = [hf.sampen(big_list[int(i):int(i + 300)], emb_dim=1, tolerance=tolerance)
-                      for i in range(len(big_list)-300)]
+        slice_length = 300
+        tolerance = 0.3 * np.std(big_list)
+        index_hold = []
+        for slice in slice_iterator(big_list, slice_length):
+            entropy_index = hf.sampen(slice, emb_dim=1, tolerance=tolerance)
+            index_hold.append(entropy_index)
 
         # N.B. the cutoffs have still to be evaluated!
         high_decision_cutoff = 0.9 * ((np.max(index_hold)) - (np.min(index_hold))) + np.min(index_hold)

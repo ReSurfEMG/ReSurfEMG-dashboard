@@ -244,7 +244,7 @@ def get_breaths(emg: np.array, start_sample: int, stop_sample: int, method: str)
         tolerance = 0.3 * np.std(big_list)
         index_hold = []
         for slice in slice_iterator(big_list, slice_length):
-            entropy_index = hf.sampen(slice, emb_dim=1, tolerance=tolerance)
+            entropy_index = hf.sampen_optimized(slice, emb_dim=1, tolerance=tolerance)
             index_hold.append(entropy_index)
 
         # N.B. the cutoffs have still to be evaluated!
